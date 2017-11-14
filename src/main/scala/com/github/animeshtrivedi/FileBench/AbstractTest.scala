@@ -5,5 +5,5 @@ package com.github.animeshtrivedi.FileBench
   */
 trait AbstractTest extends Runnable {
   def init(fileName:String, expectedBytes:Long)
-  def getResults():(Long, Long) // returns rows and bytes
+  def getResults():(Long, Long, Long) // returns rows and bytes, runtime
 }

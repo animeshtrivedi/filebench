@@ -16,6 +16,8 @@ class SFFTest(inputDir:String, parallel:Int){
     private var totalRows = 0L
     private val sff = new SimpleFileFormat
     private var itr:Iterator[InternalRow] = _
+    private var start = 0L
+    private var end = 0L
 
     override def init(fileName: String, expectedBytes:Long): Unit = {
       this.totalBytesExpected = expectedBytes
@@ -25,16 +27,18 @@ class SFFTest(inputDir:String, parallel:Int){
 
     override def run(): Unit = {
       /* here we need to consume the iterator */
+      start = System.nanoTime()
       while(itr.hasNext){
         itr.next()
         totalRows+=1
       }
+      end = System.nanoTime()
     }
 
-    override def getResults():(Long, Long) = {
+    override def getResults():(Long, Long, Long) = {
       /* here we need to run the count */
       require(totalBytesRead == totalBytesExpected)
-      (totalRows, totalBytesRead)
+      (totalRows, totalBytesRead, end - start)
     }
   }
 
@@ -75,4 +79,6 @@ class SFFTest(inputDir:String, parallel:Int){
   var totalBytes = 0L
   filesToTest.foreach( x=>  totalBytes+=x._2)
   println(" Runtime is " + (end - start)/1000000 + " msec, rows " + totalRows + " bw: " + (totalBytes * 8)/(end - start) + " Gbps")
+  val runtTime = testArr.map(x => x.getResults()._3).sorted
+  runtTime.foreach( x => println("runtime: " + (x / 1000000) + " msec"))
 }
