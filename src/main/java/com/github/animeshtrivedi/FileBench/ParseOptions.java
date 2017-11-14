@@ -7,10 +7,27 @@ import org.apache.commons.cli.*;
  */
 public class ParseOptions {
     private Options options;
+    private String test;
+    private int parallel;
+    private String inputDir;
 
     public ParseOptions(){
         options = new Options();
+        this.test = "sffread";
+        this.parallel = 16;
+        this.inputDir = "/sql/tpcds-sff/store_sales/";
         options.addOption("h", "help", false, "show help.");
+        options.addOption("i", "input", true, "input directory location on HDFS-fs.");
+        options.addOption("t", "test", true, "test.");
+        options.addOption("p", "parallel", true, "parallel instances.");
+    }
+
+    public int getParallel(){
+        return this.parallel;
+    }
+
+    public String getInputDir(){
+        return this.inputDir;
     }
 
     public void show_help() {
