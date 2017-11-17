@@ -2,7 +2,7 @@ package com.github.animeshtrivedi.FileBench
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
-import org.apache.spark.sql.SimpleFileFormat
+import org.apache.spark.sql.simplefileformat.SimpleFileFormat
 
 /**
   * Created by atr on 14.11.17.
