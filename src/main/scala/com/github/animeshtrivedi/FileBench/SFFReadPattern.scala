@@ -52,10 +52,10 @@ class SFFReadPattern (inputDir:String, parallel:Int){
       end = System.nanoTime()
     }
 
-    override def getResults():(Long, Long, Long) = {
+    override def getResults():TestResult = {
       /* here we need to run the count */
       require(totalBytesRead == totalBytesExpected)
-      (totalRows, totalBytesRead, end - start)
+      TestResult(totalRows, totalBytesRead, end - start)
     }
   }
 
@@ -87,10 +87,10 @@ class SFFReadPattern (inputDir:String, parallel:Int){
       end = System.nanoTime()
     }
 
-    override def getResults():(Long, Long, Long) = {
+    override def getResults():TestResult = {
       /* here we need to run the count */
       require(totalBytesRead == totalBytesExpected)
-      (totalRows, totalBytesRead, end - start)
+      TestResult(totalRows, totalBytesRead, end - start)
     }
   }
 
@@ -127,10 +127,10 @@ class SFFReadPattern (inputDir:String, parallel:Int){
   /////////////////////////////////////////
 
   var totalRows = 0L
-  testArr.foreach(x => totalRows+=x.getResults()._1)
+  testArr.foreach(x => totalRows+=x.getResults().rows)
   var totalBytes = 0L
   filesToTest.foreach( x=>  totalBytes+=x._2)
   println("Runtime is " + (end - start)/1000000 + " msec, rows " + totalRows + " bw: " + (totalBytes * 8)/(end - start) + " Gbps")
-  val runtTime = testArr.map(x => x.getResults()._3).sorted
+  val runtTime = testArr.map(x => x.getResults().runtimeNanoSec).sorted
   runtTime.foreach( x => println("runtime: " + (x / 1000000) + " msec"))
 }

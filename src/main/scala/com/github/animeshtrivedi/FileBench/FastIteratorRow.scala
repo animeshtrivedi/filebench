@@ -5,7 +5,7 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 /**
   * Created by atr on 16.11.17.
   */
-private class FastIteratorRow1(stream:HdfsByteBufferReader) extends Iterator[InternalRow] {
+class FastIteratorRow1(stream:HdfsByteBufferReader) extends Iterator[InternalRow] {
   private val unsafeRow = new UnsafeRow(23)
   private var done = false
   private var incomingSize = 0

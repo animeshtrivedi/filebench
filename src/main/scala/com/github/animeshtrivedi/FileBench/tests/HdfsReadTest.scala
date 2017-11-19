@@ -1,5 +1,6 @@
-package com.github.animeshtrivedi.FileBench
+package com.github.animeshtrivedi.FileBench.tests
 
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FSDataInputStream, Path}
 
@@ -20,7 +21,7 @@ class HdfsReadTest extends AbstractTest {
     this.expectedIncomingBytes = expectedBytes
   }
 
-  override def getResults(): (Long, Long, Long) = (0, this.expectedIncomingBytes, 0)
+  override def getResults():TestResult = TestResult(0, this.expectedIncomingBytes, 0)
 
   override def run(): Unit = {
     var rx = instream.read(byteArr)
@@ -34,7 +35,7 @@ class HdfsReadTest extends AbstractTest {
   }
 }
 
-object HdfsReadTest extends AllocateTestObject {
+object HdfsReadTest extends TestObjectFactory {
   final override def allocate(): AbstractTest = new HdfsReadTest
 }
 

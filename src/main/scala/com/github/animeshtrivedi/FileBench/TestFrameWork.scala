@@ -6,7 +6,7 @@ import org.apache.hadoop.fs.Path
 /**
   * Created by atr on 17.11.17.
   */
-class TestFrameWork(val allocateTestObject: AllocateTestObject, val inputDir:String, val parallel:Int) {
+class TestFrameWork(val allocateTestObject: TestObjectFactory, val inputDir:String, val parallel:Int) {
 
   private[this] val path = new Path(inputDir)
   private[this] val conf = new Configuration()
@@ -38,10 +38,10 @@ class TestFrameWork(val allocateTestObject: AllocateTestObject, val inputDir:Str
   /////////////////////////////////////////
 
   var totalRows = 0L
-  testArr.foreach(x => totalRows+=x.getResults()._1)
+  testArr.foreach(x => totalRows+=x.getResults().rows)
   var totalBytes = 0L
   filesToTest.foreach( x=>  totalBytes+=x._2)
   println(" Runtime is " + (end - start)/1000000 + " msec, rows " + totalRows + " bw: " + (totalBytes * 8)/(end - start) + " Gbps")
-  val runtTime = testArr.map(x => x.getResults()._3).sorted
+  val runtTime = testArr.map(x => x.getResults().runtimeNanoSec).sorted
   runtTime.foreach( x => println("runtime: " + (x / 1000000) + " msec"))
 }
