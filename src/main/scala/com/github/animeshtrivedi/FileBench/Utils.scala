@@ -1,6 +1,6 @@
 package com.github.animeshtrivedi.FileBench
 
-import com.github.animeshtrivedi.FileBench.tests.HdfsReadTest
+import com.github.animeshtrivedi.FileBench.tests.{HdfsReadTest, ParquetReadTest}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
 import org.apache.spark.sql.simplefileformat.SimpleFileFormat
@@ -39,6 +39,8 @@ object Utils {
   def fromStringToFactory(str:String):TestObjectFactory = {
     str.toLowerCase() match {
       case "hdfsread" => HdfsReadTest
+      case "parquetread" => ParquetReadTest
+      case _ => throw new Exception(" whoa ...")
     }
   }
 }

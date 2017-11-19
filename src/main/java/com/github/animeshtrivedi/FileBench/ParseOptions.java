@@ -43,6 +43,10 @@ public class ParseOptions {
                 this.parallel = Integer.parseInt(cmd.getOptionValue("p").trim());
             }
 
+            if (cmd.hasOption("i")) {
+                this.inputDir = cmd.getOptionValue("i").trim();
+            }
+
             if (cmd.hasOption("t")) {
                 this.factory = cmd.getOptionValue("t").trim();
             }

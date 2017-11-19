@@ -3,7 +3,7 @@ package com.github.animeshtrivedi.FileBench.tests
 import java.math.BigInteger
 import java.nio.charset.Charset
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestResult}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.column.ColumnReader
@@ -123,4 +123,8 @@ class ParquetReadTest extends AbstractTest {
     }
     rows
   }
+}
+
+object ParquetReadTest extends TestObjectFactory {
+  override def allocate(): AbstractTest = new ParquetReadTest
 }
