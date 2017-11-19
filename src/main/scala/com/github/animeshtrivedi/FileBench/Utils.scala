@@ -116,6 +116,7 @@ object Utils {
       case "parquetread" => ParquetReadTest
       case "sffread" => SFFReadTest
       case "orcread" => ORCReadTest
+      case "avroread" => AvroReadTest
       case _ => throw new Exception(" whoa ...")
     }
   }
