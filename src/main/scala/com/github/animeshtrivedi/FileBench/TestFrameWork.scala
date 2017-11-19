@@ -41,7 +41,13 @@ class TestFrameWork(val allocateTestObject: TestObjectFactory, val inputDir:Stri
   testArr.foreach(x => totalRows+=x.getResults().rows)
   var totalBytes = 0L
   filesToTest.foreach( x=>  totalBytes+=x._2)
-  println(" Runtime is " + (end - start)/1000000 + " msec, rows " + totalRows + " bw: " + (totalBytes * 8)/(end - start) + " Gbps")
+
+  val runTimeinMS = Utils.twoLongDivToDecimal(end - start, Utils.NANOSEC_TO_MILLISEC)
+  val bandwidth = Utils.twoLongDivToDecimal((totalBytes * 8), (end - start))
   val runtTime = testArr.map(x => x.getResults().runtimeNanoSec).sorted
-  runtTime.foreach( x => println("runtime: " + (x / 1000000) + " msec"))
+  runtTime.foreach( x => println("runtime : " + Utils.twoLongDivToDecimal(x, Utils.NANOSEC_TO_MILLISEC) + " msec"))
+  println("-------------------------------------------")
+  println(" Runtime is " + runTimeinMS + " msec, rows "
+    + totalRows + " bw: " + bandwidth + " Gbps")
+  println("-------------------------------------------")
 }
