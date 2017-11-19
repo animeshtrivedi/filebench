@@ -11,13 +11,13 @@ import org.apache.spark.sql.simplefileformat.SimpleFileFormat
 class SFFTest(inputDir:String, parallel:Int){
 
   class Test extends AbstractTest {
-    private var totalBytesRead = 0L
-    private var totalBytesExpected = 0L
-    private var totalRows = 0L
-    private val sff = new SimpleFileFormat
-    private var itr:Iterator[InternalRow] = _
-    private var start = 0L
-    private var end = 0L
+    private[this] var totalBytesRead = 0L
+    private[this] var totalBytesExpected = 0L
+    private[this] var totalRows = 0L
+    private[this] val sff = new SimpleFileFormat
+    private[this] var itr:Iterator[InternalRow] = _
+    private[this] var start = 0L
+    private[this] var end = 0L
 
     override def init(fileName: String, expectedBytes:Long): Unit = {
       this.totalBytesExpected = expectedBytes

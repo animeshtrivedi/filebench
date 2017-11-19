@@ -27,7 +27,7 @@ class ParquetReadTest extends AbstractTest {
   private[this] var runTime = 0L
   private[this] var readBytes = 0L
 
-  override def init(fileName: String, expectedBytes: Long): Unit = {
+  final override def init(fileName: String, expectedBytes: Long): Unit = {
     val conf = new Configuration()
     val path = new Path(fileName)
     val readFooter:ParquetMetadata = ParquetFileReader.readFooter(conf,
@@ -40,9 +40,9 @@ class ParquetReadTest extends AbstractTest {
     this.readBytes = expectedBytes
   }
 
-  override def getResults(): TestResult = TestResult(expectedRows, this.readBytes, runTime)
+  final override def getResults(): TestResult = TestResult(expectedRows, this.readBytes, runTime)
 
-  override def run(): Unit = {
+  final override def run(): Unit = {
     var tempRows = 0L
     var rowBatchesx = 0L
     var readSoFarRows = 0L
@@ -79,13 +79,13 @@ class ParquetReadTest extends AbstractTest {
   }
 
   private [this] class DumpGroupConverter extends GroupConverter {
-    def start() {}
-    def end() {}
-    def getConverter(fieldIndex: Int) = new DumpConverter
+    final def start() {}
+    final def end() {}
+    final def getConverter(fieldIndex: Int) = new DumpConverter
   }
 
   private [this] class DumpConverter extends PrimitiveConverter {
-    override def asGroupConverter = new DumpGroupConverter
+    final override def asGroupConverter = new DumpGroupConverter
   }
 
   private [this] def consumeColumn(crstore: ColumnReadStoreImpl, column: org.apache.parquet.column.ColumnDescriptor): Long = {
@@ -126,5 +126,5 @@ class ParquetReadTest extends AbstractTest {
 }
 
 object ParquetReadTest extends TestObjectFactory {
-  override def allocate(): AbstractTest = new ParquetReadTest
+  final override def allocate(): AbstractTest = new ParquetReadTest
 }

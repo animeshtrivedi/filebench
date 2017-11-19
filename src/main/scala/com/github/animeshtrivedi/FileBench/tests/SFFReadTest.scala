@@ -16,15 +16,15 @@ class SFFReadTest extends  AbstractTest {
   private[this] var start = 0L
   private[this] var end = 0L
 
-  override def init(fileName: String, expectedBytes: Long): Unit = {
+  final override def init(fileName: String, expectedBytes: Long): Unit = {
     this.totalBytesExpected = expectedBytes
     this.totalBytesRead = expectedBytes
     this.itr = sff.buildRowIterator(fileName)
   }
 
-  override def getResults(): TestResult = TestResult(totalRows, totalBytesRead, end - start)
+  final override def getResults(): TestResult = TestResult(totalRows, totalBytesRead, end - start)
 
-  override def run(): Unit = {
+  final override def run(): Unit = {
     /* here we need to consume the iterator */
     start = System.nanoTime()
     while(itr.hasNext){
@@ -36,5 +36,5 @@ class SFFReadTest extends  AbstractTest {
 }
 
 object SFFReadTest extends TestObjectFactory {
-  override def allocate(): AbstractTest = new SFFReadTest
+  final override def allocate(): AbstractTest = new SFFReadTest
 }

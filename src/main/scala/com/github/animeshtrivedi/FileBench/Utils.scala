@@ -1,6 +1,6 @@
 package com.github.animeshtrivedi.FileBench
 
-import com.github.animeshtrivedi.FileBench.tests.{HdfsReadTest, ParquetReadTest, SFFReadTest}
+import com.github.animeshtrivedi.FileBench.tests.{HdfsReadTest, ORCReadTest, ParquetReadTest, SFFReadTest}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
 import org.apache.spark.sql.simplefileformat.SimpleFileFormat
@@ -115,6 +115,7 @@ object Utils {
       case "hdfsread" => HdfsReadTest
       case "parquetread" => ParquetReadTest
       case "sffread" => SFFReadTest
+      case "orcread" => ORCReadTest
       case _ => throw new Exception(" whoa ...")
     }
   }
