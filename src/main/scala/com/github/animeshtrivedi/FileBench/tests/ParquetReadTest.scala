@@ -13,6 +13,7 @@ import org.apache.parquet.format.converter.ParquetMetadataConverter
 import org.apache.parquet.hadoop.ParquetFileReader
 import org.apache.parquet.hadoop.metadata.{FileMetaData, ParquetMetadata}
 import org.apache.parquet.io.api.{GroupConverter, PrimitiveConverter}
+import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
 import org.apache.parquet.schema.{MessageType, PrimitiveType}
 
 /**
@@ -26,6 +27,9 @@ class ParquetReadTest extends AbstractTest {
   private[this] var mdata:FileMetaData = _
   private[this] var runTime = 0L
   private[this] var readBytes = 0L
+
+  private[this] var longSum:Long = 0L
+  private[this] var doubleSum:Double = 0
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     val conf = new Configuration()
@@ -48,6 +52,34 @@ class ParquetReadTest extends AbstractTest {
     var readSoFarRows = 0L
     var pageReadStore:PageReadStore = null
     val colDesc = schema.getColumns
+
+    val explictType = List(
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.INT64,
+      PrimitiveType.PrimitiveTypeName.INT32,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE,
+      PrimitiveType.PrimitiveTypeName.DOUBLE
+    )
+
+    val conv = new DumpGroupConverter
     val s2 = System.nanoTime()
     try
     {
@@ -56,10 +88,10 @@ class ParquetReadTest extends AbstractTest {
         pageReadStore = parquetFileReader.readNextRowGroup()
         if (pageReadStore != null) {
           rowBatchesx+=1
-          val colReader = new ColumnReadStoreImpl(pageReadStore, new DumpGroupConverter,
+          val colReader = new ColumnReadStoreImpl(pageReadStore, conv,
             schema, mdata.getCreatedBy)
           for(i <-0 until colDesc.size()){
-            tempRows += consumeColumn(colReader, colDesc.get(i))
+            tempRows += consumeColumn(colReader, colDesc.get(i), explictType(i))
           }
           readSoFarRows+=(tempRows / colDesc.size())
           tempRows = 0L
@@ -75,6 +107,7 @@ class ParquetReadTest extends AbstractTest {
       parquetFileReader.close()
       require(readSoFarRows == expectedRows,
         " readSoFar " + readSoFarRows + " and expectedRows " + expectedRows + " do not match ")
+      println(this.doubleSum + " " + this.longSum)
     }
   }
 
@@ -88,7 +121,8 @@ class ParquetReadTest extends AbstractTest {
     final override def asGroupConverter = new DumpGroupConverter
   }
 
-  private [this] def consumeColumn(crstore: ColumnReadStoreImpl, column: org.apache.parquet.column.ColumnDescriptor): Long = {
+  private [this] def consumeColumn(crstore: ColumnReadStoreImpl, column: org.apache.parquet.column.ColumnDescriptor,
+                                   matchType:PrimitiveTypeName): Long = {
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
     val rows = creader.getTotalValueCount
@@ -99,10 +133,33 @@ class ParquetReadTest extends AbstractTest {
         val value = column.getType match {
           case PrimitiveType.PrimitiveTypeName.BINARY => creader.getBinary
           case PrimitiveType.PrimitiveTypeName.BOOLEAN => creader.getBoolean
-          case PrimitiveType.PrimitiveTypeName.DOUBLE => creader.getDouble
+          case PrimitiveType.PrimitiveTypeName.DOUBLE => {
+            val x = creader.getDouble
+            doubleSum+=x
+            x
+          }
           case PrimitiveType.PrimitiveTypeName.FLOAT => creader.getFloat
-          case PrimitiveType.PrimitiveTypeName.INT64 => creader.getLong
-          case PrimitiveType.PrimitiveTypeName.INT32 => creader.getInteger
+          case PrimitiveType.PrimitiveTypeName.INT64 => {
+            val x = creader.getLong
+            longSum+=x
+            x
+          }
+          case PrimitiveType.PrimitiveTypeName.INT32 => {
+            val x = creader.getInteger
+            val y = matchType match {
+              case PrimitiveType.PrimitiveTypeName.DOUBLE => {
+                val xx = BigDecimal(x, 2).toDouble
+                doubleSum+=xx
+                xx
+              }
+              case _ => {
+                longSum+=x
+                x
+              }
+            }
+            y
+          }
+
           case PrimitiveType.PrimitiveTypeName.INT96 => {
             val x = creader.getBinary.getBytesUnsafe
             if(x == null) null else new BigInteger(x)
@@ -117,6 +174,7 @@ class ParquetReadTest extends AbstractTest {
               buffer.toString
             }
           }
+          case _ => throw new Exception(" type did not match yet? " + column.getType)
         }
       }
       creader.consume()
