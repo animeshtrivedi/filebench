@@ -8,6 +8,8 @@ import org.apache.orc.{OrcFile, RecordReader}
 
 /**
   * Created by atr on 19.11.17.
+  *
+  * https://codecheese.wordpress.com/2017/06/13/reading-and-writing-orc-files-using-vectorized-row-batch-in-java/
   */
 class ORCReadTest extends  AbstractTest {
 

@@ -18,6 +18,7 @@ class SFFReadTest extends  AbstractTest {
   private[this] var end = 0L
 
   private[this] var _sum:Long = 0L
+  private[this] var _validDecimal:Long = 0L
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     this.totalBytesExpected = expectedBytes
@@ -41,18 +42,30 @@ class SFFReadTest extends  AbstractTest {
     this._sum+= row.getInt(10)
   }
   private[this] def consumeUnsafeRowDouble(row:UnsafeRow):Unit= {
-    this._sum+= {if(row.isNullAt(11)) 0 else BigDecimal(row.getLong(11), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(12)) 0 else BigDecimal(row.getLong(12), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(13)) 0 else BigDecimal(row.getLong(13), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(14)) 0 else BigDecimal(row.getLong(14), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(15)) 0 else BigDecimal(row.getLong(15), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(16)) 0 else BigDecimal(row.getLong(16), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(17)) 0 else BigDecimal(row.getLong(17), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(18)) 0 else BigDecimal(row.getLong(18), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(19)) 0 else BigDecimal(row.getLong(19), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(20)) 0 else BigDecimal(row.getLong(20), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(21)) 0 else BigDecimal(row.getLong(21), 2) .doubleValue().toLong}
-    this._sum+= {if(row.isNullAt(22)) 0 else BigDecimal(row.getLong(22), 2) .doubleValue().toLong}
+    this._sum+= {if(row.isNullAt(11)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(11), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(12)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(12), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(13)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(13), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(14)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(14), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(15)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(15), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(16)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(16), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(17)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(17), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(18)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(18), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(19)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(19), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(20)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(20), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(21)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(21), 2) .doubleValue().toLong}}
+    this._sum+= {if(row.isNullAt(22)) 0 else {this._validDecimal+=1
+      BigDecimal(row.getLong(22), 2) .doubleValue().toLong}}
   }
 
   private[this] def consumeUnsafeRow(row:UnsafeRow):Unit= {
@@ -123,7 +136,7 @@ class SFFReadTest extends  AbstractTest {
       totalRows+=1
     }
     end = System.nanoTime()
-    println(this._sum)
+    println(this._sum + " valid decimal " + this._validDecimal)
   }
 }
 
