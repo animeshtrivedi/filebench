@@ -48,6 +48,7 @@ class TestFrameWork(val allocateTestObject: TestObjectFactory, val inputDir:Stri
   runtTime.foreach( x => println("runtime : " + Utils.twoLongDivToDecimal(x, Utils.NANOSEC_TO_MILLISEC) + " msec"))
   println("-------------------------------------------")
   println(" Runtime is " + runTimeinMS + " msec, rows "
-    + totalRows + " bw: " + bandwidth + " Gbps")
+    + totalRows + " bw: " + bandwidth + " Gbps, [ time/row : " +
+    Utils.twoLongDivToDecimal(end - start, totalRows) + " nsec/row] ")
   println("-------------------------------------------")
 }

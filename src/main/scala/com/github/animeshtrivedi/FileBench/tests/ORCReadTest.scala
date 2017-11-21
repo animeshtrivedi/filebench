@@ -16,6 +16,7 @@ class ORCReadTest extends  AbstractTest {
   private[this] var totalRows = 0L
   private[this] var rows:RecordReader = _
   private[this] var batch:VectorizedRowBatch = _
+  private[this] var _sum:Long = 0
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     this.totalBytesExpected = expectedBytes
@@ -34,7 +35,6 @@ class ORCReadTest extends  AbstractTest {
 
 
   final override def run(): Unit = {
-    var rowCount = 0L
     val s2 = System.nanoTime()
     while (rows.nextBatch(batch)) {
       val colsArr = batch.cols
@@ -79,25 +79,51 @@ class ORCReadTest extends  AbstractTest {
 
         val intVal10 = intVector10.vector(i)
 
-        val decimalVal0 = decimalVector0.vector(i)
-        val decimalVal1 = decimalVector1.vector(i)
-        val decimalVal2 = decimalVector2.vector(i)
-        val decimalVal3 = decimalVector3.vector(i)
-        val decimalVal4 = decimalVector4.vector(i)
-        val decimalVal5 = decimalVector5.vector(i)
-        val decimalVal6 = decimalVector6.vector(i)
-        val decimalVal7 = decimalVector7.vector(i)
-        val decimalVal8 = decimalVector8.vector(i)
-        val decimalVal9 = decimalVector9.vector(i)
-        val decimalVal10 = decimalVector10.vector(i)
-        val decimalVal11 = decimalVector11.vector(i)
+        val decimalVal0 = decimalVector0.vector(i).doubleValue()
+        val decimalVal1 = decimalVector1.vector(i).doubleValue()
+        val decimalVal2 = decimalVector2.vector(i).doubleValue()
+        val decimalVal3 = decimalVector3.vector(i).doubleValue()
+        val decimalVal4 = decimalVector4.vector(i).doubleValue()
+        val decimalVal5 = decimalVector5.vector(i).doubleValue()
+        val decimalVal6 = decimalVector6.vector(i).doubleValue()
+        val decimalVal7 = decimalVector7.vector(i).doubleValue()
+        val decimalVal8 = decimalVector8.vector(i).doubleValue()
+        val decimalVal9 = decimalVector9.vector(i).doubleValue()
+        val decimalVal10 = decimalVector10.vector(i).doubleValue()
+        val decimalVal11 = decimalVector11.vector(i).doubleValue()
 
-        rowCount += 1
+        this._sum+=intVal0
+        this._sum+=intVal1
+        this._sum+=intVal2
+        this._sum+=intVal3
+        this._sum+=intVal4
+        this._sum+=intVal5
+        this._sum+=intVal6
+        this._sum+=intVal7
+        this._sum+=intVal8
+        this._sum+=intVal9
+        this._sum+=intVal10
+        this._sum+=decimalVal0.toLong
+        this._sum+=decimalVal1.toLong
+        this._sum+=decimalVal2.toLong
+        this._sum+=decimalVal3.toLong
+        this._sum+=decimalVal4.toLong
+        this._sum+=decimalVal5.toLong
+        this._sum+=decimalVal6.toLong
+        this._sum+=decimalVal7.toLong
+        this._sum+=decimalVal8.toLong
+        this._sum+=decimalVal9.toLong
+        this._sum+=decimalVal10.toLong
+        this._sum+=decimalVal11.toLong
+
+        this.totalRows += 1
+
       }
     }
     val s3 = System.nanoTime()
     rows.close()
     this.runTime = s3 - s2
+    println(this._sum)
   }
 }
 

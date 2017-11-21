@@ -28,8 +28,7 @@ class ParquetReadTest extends AbstractTest {
   private[this] var runTime = 0L
   private[this] var readBytes = 0L
 
-  private[this] var longSum:Long = 0L
-  private[this] var doubleSum:Double = 0
+  private[this] var _sum:Long = 0L
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     val conf = new Configuration()
@@ -107,7 +106,7 @@ class ParquetReadTest extends AbstractTest {
       parquetFileReader.close()
       require(readSoFarRows == expectedRows,
         " readSoFar " + readSoFarRows + " and expectedRows " + expectedRows + " do not match ")
-      println(this.doubleSum + " " + this.longSum)
+      println(this._sum)
     }
   }
 
@@ -135,13 +134,13 @@ class ParquetReadTest extends AbstractTest {
           case PrimitiveType.PrimitiveTypeName.BOOLEAN => creader.getBoolean
           case PrimitiveType.PrimitiveTypeName.DOUBLE => {
             val x = creader.getDouble
-            doubleSum+=x
+            this._sum+=x.toLong
             x
           }
           case PrimitiveType.PrimitiveTypeName.FLOAT => creader.getFloat
           case PrimitiveType.PrimitiveTypeName.INT64 => {
             val x = creader.getLong
-            longSum+=x
+            this._sum+=x
             x
           }
           case PrimitiveType.PrimitiveTypeName.INT32 => {
@@ -149,11 +148,11 @@ class ParquetReadTest extends AbstractTest {
             val y = matchType match {
               case PrimitiveType.PrimitiveTypeName.DOUBLE => {
                 val xx = BigDecimal(x, 2).toDouble
-                doubleSum+=xx
+                this._sum+=xx.toLong
                 xx
               }
               case _ => {
-                longSum+=x
+                this._sum+=x
                 x
               }
             }
