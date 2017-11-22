@@ -72,9 +72,7 @@ class ORCReadTest extends  AbstractTest {
     }
   }
 
-  final override def run(): Unit = runV2()
-
-  private[this] final def runV2(): Unit = {
+  final override def run(): Unit = {
     val all = this.schema.getChildren
     val s2 = System.nanoTime()
     while (rows.nextBatch(batch)) {
