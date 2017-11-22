@@ -3,7 +3,7 @@ package com.github.animeshtrivedi.FileBench.tests
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.hive.ql.exec.vector.{DecimalColumnVector, LongColumnVector, VectorizedRowBatch}
+import org.apache.hadoop.hive.ql.exec.vector.{ColumnVector, DecimalColumnVector, LongColumnVector, VectorizedRowBatch}
 import org.apache.orc.{OrcFile, RecordReader}
 
 /**
@@ -19,6 +19,7 @@ class ORCReadTest extends  AbstractTest {
   private[this] var rows:RecordReader = _
   private[this] var batch:VectorizedRowBatch = _
   private[this] var _sum:Long = 0
+  private[this] var _validDecimal:Long = 0
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     this.totalBytesExpected = expectedBytes
@@ -35,8 +36,42 @@ class ORCReadTest extends  AbstractTest {
     this.totalBytesExpected,
     this.runTime)
 
+  private[this] def consumeIntColumn(batch:VectorizedRowBatch, index:Int):Unit = {
+    val intVector: LongColumnVector = batch.cols(index).asInstanceOf[LongColumnVector]
+    val isNull = intVector.isNull
+    for (i <- 0 until batch.size) {
+      if(!isNull(i)){
+        val intVal = intVector.vector(i)
+        this._sum+=intVal
+      }
+    }
+  }
 
-  final override def run(): Unit = {
+  private[this] def consumeDecimalColumn(batch:VectorizedRowBatch, index:Int):Unit = {
+    val decimalVector: DecimalColumnVector = batch.cols(index).asInstanceOf[DecimalColumnVector]
+    val isNull = decimalVector.isNull
+    for (i <- 0 until batch.size) {
+      if(!isNull(i)){
+        val decimalVal = decimalVector.vector(i).doubleValue()
+        this._sum+=decimalVal.toLong
+        this._validDecimal+=1
+      }
+    }
+  }
+
+  private[this] def consumeLongColumn(batch:VectorizedRowBatch, index:Int):Unit = {
+    val longVector: LongColumnVector = batch.cols(index).asInstanceOf[LongColumnVector]
+    val isNull = longVector.isNull
+    for (i <- 0 until batch.size) {
+      if(!isNull(i)){
+        val longVal = longVector.vector(i)
+        this._sum+=longVal
+      }
+    }
+  }
+
+
+  private[this] final def runV1(): Unit = {
     val s2 = System.nanoTime()
     while (rows.nextBatch(batch)) {
       val colsArr = batch.cols
@@ -78,9 +113,11 @@ class ORCReadTest extends  AbstractTest {
         val intVal7 = intVector7.vector(i)
         val intVal8 = intVector8.vector(i)
         val intVal9 = intVector9.vector(i)
+        //intVector0.isNull(i)???
 
         val intVal10 = intVector10.vector(i)
 
+        //decimalVector0.isNull(i) vector(i).
         val decimalVal0 = decimalVector0.vector(i).doubleValue()
         val decimalVal1 = decimalVector1.vector(i).doubleValue()
         val decimalVal2 = decimalVector2.vector(i).doubleValue()
@@ -127,7 +164,48 @@ class ORCReadTest extends  AbstractTest {
     this.runTime = s3 - s2
     println(this._sum)
   }
+
+  final override def run(): Unit = runV2()
+
+  private[this] final def runV2(): Unit = {
+    val s2 = System.nanoTime()
+    while (rows.nextBatch(batch)) {
+      consumeIntColumn(batch, 0)
+      consumeIntColumn(batch, 1)
+      consumeIntColumn(batch, 2)
+      consumeIntColumn(batch, 3)
+      consumeIntColumn(batch, 4)
+      consumeIntColumn(batch, 5)
+      consumeIntColumn(batch, 6)
+      consumeIntColumn(batch, 7)
+      consumeIntColumn(batch, 8)
+
+      consumeLongColumn(batch, 9)
+
+      consumeIntColumn(batch, 10)
+
+      consumeDecimalColumn(batch, 11)
+      consumeDecimalColumn(batch, 12)
+      consumeDecimalColumn(batch, 13)
+      consumeDecimalColumn(batch, 14)
+      consumeDecimalColumn(batch, 15)
+      consumeDecimalColumn(batch, 16)
+      consumeDecimalColumn(batch, 17)
+      consumeDecimalColumn(batch, 18)
+      consumeDecimalColumn(batch, 19)
+      consumeDecimalColumn(batch, 20)
+      consumeDecimalColumn(batch, 21)
+      consumeDecimalColumn(batch, 22)
+      this.totalRows += batch.size
+
+    }
+    val s3 = System.nanoTime()
+    rows.close()
+    this.runTime = s3 - s2
+    println(this._sum + " : " + this._validDecimal)
+  }
 }
+
 
 object ORCReadTest extends TestObjectFactory{
   final override def allocate(): AbstractTest = new ORCReadTest
