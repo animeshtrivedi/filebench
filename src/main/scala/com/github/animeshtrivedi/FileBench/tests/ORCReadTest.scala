@@ -202,7 +202,7 @@ class ORCReadTest extends  AbstractTest {
     val s3 = System.nanoTime()
     rows.close()
     this.runTime = s3 - s2
-    println(this._sum + " : " + this._validDecimal)
+    println(this._sum + " valid decimal " + this._validDecimal)
   }
 }
 
