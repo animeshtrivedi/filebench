@@ -117,6 +117,7 @@ object Utils {
       case "sffread" => SFFReadTest
       case "orcread" => ORCReadTest
       case "avroread" => AvroReadTest
+      case "jsonread" => JsonReadTest
       case _ => throw new Exception(" whoa ...")
     }
   }
