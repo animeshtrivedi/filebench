@@ -1,9 +1,12 @@
 package com.github.animeshtrivedi.FileBench.tests
 
+import java.io.IOException
+
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.simplefileformat.SimpleFileFormat
+import org.apache.spark.sql.types._
 
 /**
   * Created by atr on 19.11.17.
@@ -16,6 +19,8 @@ class SFFReadTest extends  AbstractTest {
   private[this] var itr:Iterator[InternalRow] = _
   private[this] var start = 0L
   private[this] var end = 0L
+  private[this] var schema:StructType = _
+  private[this] var colIndex:Array[(StructField, Int)] = _
 
   private[this] var _sum:Long = 0L
   private[this] var _validDecimal:Long = 0L
@@ -24,38 +29,36 @@ class SFFReadTest extends  AbstractTest {
     this.totalBytesExpected = expectedBytes
     this.totalBytesRead = expectedBytes
     this.itr = sff.buildRowIterator(fileName)
+    this.schema = sff.getSchemaFromDatafile(fileName)
+    this.colIndex = this.schema.fields.zipWithIndex
   }
 
   final override def getResults(): TestResult = TestResult(totalRows, totalBytesRead, end - start)
 
-  private[this] def consumeUnsafeRowInt(row:UnsafeRow):Unit= {
-    this._sum+= row.getInt(0)
-    this._sum+= row.getInt(1)
-    this._sum+= row.getInt(2)
-    this._sum+= row.getInt(3)
-    this._sum+= row.getInt(4)
-    this._sum+= row.getInt(5)
-    this._sum+= row.getInt(6)
-    this._sum+= row.getInt(7)
-    this._sum+= row.getInt(8)
-
-    this._sum+= row.getLong(9)
-
-    this._sum+= row.getInt(10)
+  private[this] def _readInt(row:UnsafeRow, index:Int):Unit= {
+    if (!row.isNullAt(index))
+      this._sum += row.getInt(index)
   }
 
-  private[this] def consumeUnsafeRowDouble(row:UnsafeRow):Unit= {
-    for(i <- 11 until 23){
-      if(!row.isNullAt(i)){
-        this._validDecimal+=1
-        this._sum+=BigDecimal(row.getLong(i), 2).toDouble.toLong
-      }
+  private[this] def _readLong(row:UnsafeRow, index:Int):Unit= {
+    if (!row.isNullAt(index))
+      this._sum += row.getLong(index)
+  }
+
+  private[this] def _readDecimal(row:UnsafeRow, index:Int, d:DecimalType):Unit= {
+    if (!row.isNullAt(index)){
+      this._validDecimal+=1
+      this._sum+=BigDecimal(row.getLong(index), d.scale).toDouble.toLong
     }
   }
 
   private[this] def consumeUnsafeRow(row:UnsafeRow):Unit= {
-    consumeUnsafeRowInt(row)
-    consumeUnsafeRowDouble(row)
+    this.colIndex.foreach( f => f._1.dataType match {
+      case IntegerType => _readInt(row, f._2)
+      case LongType => _readLong(row, f._2)
+      case d:DecimalType => _readDecimal(row, f._2, d)
+      case _ => throw new Exception(" not implemented type ")
+    })
   }
 
   final override def run(): Unit = {
