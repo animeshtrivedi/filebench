@@ -1,6 +1,6 @@
 package com.github.animeshtrivedi.FileBench
 
-import com.github.animeshtrivedi.FileBench.tests.{HdfsReadTest, ORCReadTest, ParquetReadTest, SFFReadTest}
+import com.github.animeshtrivedi.FileBench.tests._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
 import org.apache.spark.sql.simplefileformat.SimpleFileFormat

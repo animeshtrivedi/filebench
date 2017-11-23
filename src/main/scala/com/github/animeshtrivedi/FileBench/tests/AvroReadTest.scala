@@ -1,13 +1,16 @@
-package com.github.animeshtrivedi.FileBench
+package com.github.animeshtrivedi.FileBench.tests
 
 import java.net.URI
 
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
 import org.apache.avro.Schema
-import org.apache.avro.file.{DataFileReader, FileReader}
-import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.Schema.Field
+import org.apache.avro.file.{DataFileReader, DataFileStream, FileReader}
+import org.apache.avro.generic.{GenericDatumReader, GenericRecord, GenericRecordBuilder}
+import org.apache.avro.io.DecoderFactory
 import org.apache.avro.mapred.FsInput
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FSDataInputStream, Path}
 
 import scala.util.control.NonFatal
 
@@ -16,7 +19,7 @@ import scala.util.control.NonFatal
   */
 //https://www.ctheu.com/2017/03/02/serializing-data-efficiently-with-apache-avro-and-dealing-with-a-schema-registry/
 //https://www.tutorialspoint.com/avro/serialization_by_generating_class.htm
-class AvroReadTest extends  AbstractTest {
+class AvroReadTest2 extends  AbstractTest {
   // we can found this from the metadata file of the SFF files
   private[this] val schemaStr = "{\"type\":\"struct\",\"fields\":[{\"name\":\"ss_sold_date_sk\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_sold_time_sk\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_item_sk\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_customer_sk\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_cdemo_sk\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_hdemo_sk\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_addr_sk\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_store_sk\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_promo_sk\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_ticket_number\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_quantity\",\"type\":\"integer\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_wholesale_cost\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_list_price\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_sales_price\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_ext_discount_amt\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_ext_sales_price\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_ext_wholesale_cost\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_ext_list_price\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_ext_tax\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_coupon_amt\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_net_paid\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_net_paid_inc_tax\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ss_net_profit\",\"type\":\"decimal(7,2)\",\"nullable\":true,\"metadata\":{}}]}"
   private[this] val userProvidedSchema = Some(new Schema.Parser().parse(schemaStr))
@@ -62,6 +65,76 @@ class AvroReadTest extends  AbstractTest {
     val s2 = System.nanoTime()
     this.runTime = s2 - s1
     reader.close()
+  }
+}
+
+class AvroReadTest extends  AbstractTest {
+
+  private[this] var totalBytes = 0L
+  private[this] var totalRows = 0L
+  private[this] var runTime = 0L
+  private var reuse: GenericRecord = null
+  private var reader: DataFileStream[GenericRecord] = _
+  private var schema: Schema = _
+  private var arr:Array[Field] = _
+  private var positionArr:Array[Int] = _
+  private var fileName:String = _
+
+
+  private[this] var start = 0L
+  private[this] var end = 0L
+
+  private[this] var _sum:Long = 0L
+  private[this] var _validDecimal:Long = 0L
+
+  override def init(fileName: String, expectedBytes: Long): Unit = {
+    this.fileName = fileName
+    this.reader = {
+      val conf = new Configuration()
+      val path = new Path(fileName)
+      val fileSystem = path.getFileSystem(conf)
+      val instream = fileSystem.open(path)
+      //val decoder = DecoderFactory.get().binaryDecoder(instream, null)
+      //val recordBuilder = new GenericRecordBuilder(schema)
+      new DataFileStream[GenericRecord](instream, new GenericDatumReader[GenericRecord])
+    }
+    this.schema = this.reader.getSchema
+    val columnsList = this.schema.getFields
+    this.arr = new Array[Field](columnsList.size())
+    this.arr = columnsList.toArray[Field](this.arr)
+    this.positionArr = (0 until columnsList.size()).toArray
+    // this works, read the good schema
+    //print("\nSCHEMA: "+this.schema.toString() + "\n")
+    //print("\n TYPE:  "+this.schema.getType+"\n")
+//    for (i<-0 until columnsList.size()){
+//      print("\n\t element name: "+ columnsList.get(i).schema().getFullName + " + type: " + this.arr(i).schema().getType+"\n")
+//    }
+  }
+
+  override def getResults(): TestResult = TestResult(this.totalRows, this.totalBytes, this.end - this.start)
+
+  override def run(): Unit = {
+    start = System.nanoTime()
+    while (this.reader.hasNext) {
+      this.reuse = this.reader.next(this.reuse)
+      this.positionArr.foreach(f => {
+        val x = this.reuse.get(f)
+        if (x != null) {
+          x match {
+            case i: java.lang.Integer => this._sum += i
+            case l: java.lang.Long => this._sum += l
+            case f: java.lang.Float => {
+              this._sum += f.toLong
+              this._validDecimal += 1
+            }
+            case _ => throw new Exception
+          }
+        }
+      })
+      this.totalRows += 1
+    }
+    end = System.nanoTime()
+    println(this._sum + " valid2 decimal " + this._validDecimal + " myFile: " + this.fileName)
   }
 }
 
