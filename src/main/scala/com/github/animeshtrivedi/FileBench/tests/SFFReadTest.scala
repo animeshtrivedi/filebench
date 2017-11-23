@@ -1,6 +1,7 @@
 package com.github.animeshtrivedi.FileBench.tests
 
 import java.io.IOException
+import java.nio.ByteBuffer
 
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -21,6 +22,7 @@ class SFFReadTest extends  AbstractTest {
   private[this] var end = 0L
   private[this] var schema:StructType = _
   private[this] var colIndex:Array[(StructField, Int)] = _
+  private[this] val bb = ByteBuffer.allocate(java.lang.Double.BYTES)
 
   private[this] var _sum:Long = 0L
   private[this] var _validDecimal:Long = 0L
@@ -48,7 +50,11 @@ class SFFReadTest extends  AbstractTest {
   private[this] def _readDecimal(row:UnsafeRow, index:Int, d:DecimalType):Unit= {
     if (!row.isNullAt(index)){
       this._validDecimal+=1
-      this._sum+=BigDecimal(row.getLong(index), d.scale).toDouble.toLong
+      this._sum+={
+        bb.putLong(0, row.getLong(index))
+        bb.getDouble(0).toLong
+      }
+      //this._sum+=BigDecimal(row.getLong(index), d.scale).toDouble.toLong
     }
   }
 
