@@ -1,9 +1,6 @@
 package com.github.animeshtrivedi.FileBench.tests
 
-import java.io.IOException
-import java.nio.ByteBuffer
-
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.simplefileformat.SimpleFileFormat
@@ -17,10 +14,6 @@ class SFFReadTest extends  AbstractTest {
   private[this] var itr:Iterator[InternalRow] = _
   private[this] var schema:StructType = _
   private[this] var colIndex:Array[(StructField, Int)] = _
-  private[this] val bb = ByteBuffer.allocate(java.lang.Double.BYTES)
-
-  private[this] var _sum:Long = 0L
-  private[this] var _validDecimal:Long = 0L
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     this.readBytes = expectedBytes
@@ -30,9 +23,10 @@ class SFFReadTest extends  AbstractTest {
   }
 
   private[this] def _readInt(row:UnsafeRow, index:Int):Unit= {
-    if (!row.isNullAt(index))
+    if (!row.isNullAt(index)) {
       this._sum += row.getInt(index)
-    this._validInt+=1
+      this._validInt += 1
+    }
   }
 
   private[this] def _readLong(row:UnsafeRow, index:Int):Unit= {

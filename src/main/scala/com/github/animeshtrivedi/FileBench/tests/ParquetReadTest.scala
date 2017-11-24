@@ -1,6 +1,6 @@
 package com.github.animeshtrivedi.FileBench.tests
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.column.ColumnReader
@@ -9,10 +9,9 @@ import org.apache.parquet.column.page.PageReadStore
 import org.apache.parquet.format.converter.ParquetMetadataConverter
 import org.apache.parquet.hadoop.ParquetFileReader
 import org.apache.parquet.hadoop.metadata.{FileMetaData, ParquetMetadata}
-import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO}
 import org.apache.parquet.io.api.{GroupConverter, PrimitiveConverter}
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
-import org.apache.parquet.schema.{MessageType, OriginalType, PrimitiveType}
+import org.apache.parquet.schema.{MessageType, OriginalType}
 
 /**
   * Created by atr on 19.11.17.
@@ -76,6 +75,7 @@ class ParquetReadTest extends AbstractTest {
             case _ => throw new Exception(" NYI ")
           }
         }
+        this.totalRows+=pageReadStore.getRowCount
         pageReadStore = parquetFileReader.readNextRowGroup()
       }
     } catch {

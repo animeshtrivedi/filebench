@@ -1,6 +1,6 @@
 package com.github.animeshtrivedi.FileBench.tests
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 
 /**
   * Created by atr on 17.11.17.

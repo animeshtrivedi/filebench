@@ -1,6 +1,6 @@
 package com.github.animeshtrivedi.FileBench.tests
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FSDataInputStream, Path}
 

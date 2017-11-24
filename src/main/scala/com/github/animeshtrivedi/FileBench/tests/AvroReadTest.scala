@@ -1,18 +1,12 @@
 package com.github.animeshtrivedi.FileBench.tests
 
-import java.net.URI
-
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Field
-import org.apache.avro.file.{DataFileReader, DataFileStream, FileReader}
-import org.apache.avro.generic.{GenericDatumReader, GenericRecord, GenericRecordBuilder}
-import org.apache.avro.io.DecoderFactory
-import org.apache.avro.mapred.FsInput
+import org.apache.avro.file.DataFileStream
+import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FSDataInputStream, Path}
-
-import scala.util.control.NonFatal
+import org.apache.hadoop.fs.Path
 
 /**
   * Created by atr on 19.11.17.

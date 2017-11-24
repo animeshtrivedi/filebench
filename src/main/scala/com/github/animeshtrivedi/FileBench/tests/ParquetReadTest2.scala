@@ -3,7 +3,7 @@ package com.github.animeshtrivedi.FileBench.tests
 import java.math.BigInteger
 import java.nio.charset.Charset
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestResult}
+import com.github.animeshtrivedi.FileBench.AbstractTest
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.column.ColumnReader
@@ -13,10 +13,10 @@ import org.apache.parquet.example.data.simple.convert.GroupRecordConverter
 import org.apache.parquet.format.converter.ParquetMetadataConverter
 import org.apache.parquet.hadoop.ParquetFileReader
 import org.apache.parquet.hadoop.metadata.{FileMetaData, ParquetMetadata}
-import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO}
 import org.apache.parquet.io.api.{GroupConverter, PrimitiveConverter}
-import org.apache.parquet.schema.{MessageType, OriginalType, PrimitiveType}
+import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO}
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
+import org.apache.parquet.schema.{MessageType, OriginalType, PrimitiveType}
 
 /**
   * Created by atr on 22.11.17.
