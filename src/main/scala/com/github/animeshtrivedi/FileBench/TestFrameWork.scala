@@ -27,34 +27,41 @@ class TestFrameWork(val allocateTestObject: TestObjectFactory, val inputDir:Stri
   })
 
   /////////////////////////////////////////
-  val start = System.nanoTime()
+  private val start = System.nanoTime()
   for (i <- 0 until parallel) {
     threadArr(i).start()
   }
   for (i <- 0 until parallel) {
     threadArr(i).join()
   }
-  val end = System.nanoTime()
+  private val end = System.nanoTime()
   /////////////////////////////////////////
   var totalBytesMaterizlied = 0L
+  var totalSumMaterizlied = 0L
   testArr.foreach( x=> {
     totalBytesMaterizlied+=x.getTotalSizeInBytes
-    println(x.getResults)
+    totalSumMaterizlied+=x.sum
   })
-
   var totalRows = 0L
   testArr.foreach(x => totalRows+=x.getResults.rows)
-  var totalBytes = 0L
-  filesToTest.foreach( x=>  totalBytes+=x._2)
+  var totalBytesFromFS = 0L
+  filesToTest.foreach( x=>  totalBytesFromFS+=x._2)
 
-  val runTimeinMS = Utils.twoLongDivToDecimal(end - start, Utils.NANOSEC_TO_MILLISEC)
-  val bandwidthFromFS = Utils.twoLongDivToDecimal((totalBytes * 8), (end - start))
-  val bandwidthData = Utils.twoLongDivToDecimal((totalBytesMaterizlied * 8), (end - start))
-  val runtTime = testArr.map(x => x.getResults.runtimeNanoSec).sorted
-  runtTime.foreach( x => println("runtime : " + Utils.twoLongDivToDecimal(x, Utils.NANOSEC_TO_MILLISEC) + " msec"))
+  private val runTimeinMS = Utils.twoLongDivToDecimal(end - start, Utils.NANOSEC_TO_MILLISEC)
+  private val bandwidthFromFS = Utils.twoLongDivToDecimal(totalBytesFromFS * 8, end - start)
+  private val bandwidthData = Utils.twoLongDivToDecimal(totalBytesMaterizlied * 8, end - start)
+  private val runtTime = testArr.map(x => x.getResults.runtimeNanoSec).sorted
+  println("-------------------------------------------")
+  runtTime.zipWithIndex.foreach( x => println("runtime["+x._2+"] : " + Utils.twoLongDivToDecimal(x._1, Utils.NANOSEC_TO_MILLISEC) + " msec"))
+  println("-------------------------------------------")
+  println(" total bytes materialized " + totalBytesMaterizlied + " totalBytesFrom FS: " + totalBytesFromFS +
+    "  || _sum: " + totalSumMaterizlied +
+    " rowSize on FS " + Utils.twoLongDivToDecimal(totalBytesFromFS, totalRows) + " bytes " +
+    " rowSize on fly " + Utils.twoLongDivToDecimal(totalBytesMaterizlied, totalRows) + " bytes")
   println("-------------------------------------------")
   println(" Runtime is " + runTimeinMS + " msec, rows "
     + totalRows + " bw[FS]: " + bandwidthFromFS + " Gbps, bw[data] " + bandwidthData + " [ time/row : " +
     Utils.twoLongDivToDecimal(end - start, totalRows) + " nsec/row] ")
   println("-------------------------------------------")
+
 }

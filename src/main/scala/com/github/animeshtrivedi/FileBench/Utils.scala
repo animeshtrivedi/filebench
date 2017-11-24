@@ -103,7 +103,11 @@ object Utils {
   }
 
   def twoLongDivToDecimal(dividend: Long, divisor:Long):Double = {
-    decimalRound(dividend.toDouble / divisor.toDouble)
+    if(divisor == 0){
+     Double.NaN
+    } else {
+      decimalRound(dividend.toDouble / divisor.toDouble)
+    }
   }
 
   val NANOSEC_TO_MICROSEC = 1000L

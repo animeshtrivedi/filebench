@@ -38,8 +38,8 @@ class SFFReadTest extends  AbstractTest {
 
   private[this] def _readDouble(row:UnsafeRow, index:Int):Unit= {
     if (!row.isNullAt(index)){
-      this._validDouble+=1
       this._sum+=row.getDouble(index).toLong
+      this._validDouble+=1
     }
   }
 

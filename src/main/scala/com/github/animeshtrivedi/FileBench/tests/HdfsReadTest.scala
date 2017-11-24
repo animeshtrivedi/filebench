@@ -20,12 +20,14 @@ class HdfsReadTest extends AbstractTest {
   }
 
   final override def run(): Unit = {
+    val s1 = System.nanoTime()
     var rx = instream.read(byteArr)
     var bytes:Long = 0L
     while (rx > 0) {
       bytes+=rx
       rx = instream.read(byteArr)
     }
+    this.runTimeInNanoSecs = System.nanoTime() - s1
     require(this.readBytes == bytes)
     println (instream + " read " + bytes + " Bytes")
   }

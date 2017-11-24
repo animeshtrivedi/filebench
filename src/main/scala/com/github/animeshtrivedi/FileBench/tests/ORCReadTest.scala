@@ -83,9 +83,9 @@ class ORCReadTest extends  AbstractTest {
       /* loop over all the columns */
       for (i <- 0 until all.size()) {
         all.get(i).getCategory match {
-          case TypeDescription.Category.DECIMAL => consumeDecimalColumn(batch, i)
           case TypeDescription.Category.LONG => consumeLongColumn(batch, i)
           case TypeDescription.Category.INT => consumeIntColumn(batch, i)
+          case TypeDescription.Category.DOUBLE =>  consumeDoubleColumn(batch, i)
           case _  => {
             println(all.get(i) + " does not match anything?, please add the use case")
             throw new Exception()

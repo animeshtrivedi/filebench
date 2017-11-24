@@ -34,6 +34,10 @@ abstract class AbstractTest extends Runnable with Serializable {
       (this._validDouble * java.lang.Double.BYTES)
   }
 
+  final def sum:Long = {
+    this._sum
+  }
+
   final def getResults:TestResult = TestResult(this.totalRows, this.readBytes, this.runTimeInNanoSecs)
 
   def init(fileName:String, expectedBytes:Long)
