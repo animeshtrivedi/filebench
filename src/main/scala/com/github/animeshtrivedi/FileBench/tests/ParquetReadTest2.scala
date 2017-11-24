@@ -62,8 +62,6 @@ class ParquetReadTest2 extends AbstractTest {
     this.readBytes = expectedBytes
   }
 
-  final override def getResults(): TestResult = TestResult(expectedRows, this.readBytes, runTime)
-
   final override def run(): Unit = run1()
 
   final def run2():Unit = {

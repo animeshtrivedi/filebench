@@ -3,7 +3,7 @@ package com.github.animeshtrivedi.FileBench.tests
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, TestResult}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.hive.ql.exec.vector.{ColumnVector, DecimalColumnVector, LongColumnVector, VectorizedRowBatch}
+import org.apache.hadoop.hive.ql.exec.vector._
 import org.apache.orc.{OrcFile, RecordReader, TypeDescription}
 
 /**
@@ -12,18 +12,12 @@ import org.apache.orc.{OrcFile, RecordReader, TypeDescription}
   * https://codecheese.wordpress.com/2017/06/13/reading-and-writing-orc-files-using-vectorized-row-batch-in-java/
   */
 class ORCReadTest extends  AbstractTest {
-
-  private[this] var runTime = 0L
-  private[this] var totalBytesExpected = 0L
-  private[this] var totalRows = 0L
   private[this] var rows:RecordReader = _
   private[this] var schema:TypeDescription = _
   private[this] var batch:VectorizedRowBatch = _
-  private[this] var _sum:Long = 0
-  private[this] var _validDecimal:Long = 0
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
-    this.totalBytesExpected = expectedBytes
+    this.readBytes = expectedBytes
 
     val conf: Configuration = new Configuration()
     val path = new Path(fileName)
@@ -34,10 +28,6 @@ class ORCReadTest extends  AbstractTest {
     this.batch = this.schema.createRowBatch()
   }
 
-  final override def getResults(): TestResult = TestResult(this.totalRows,
-    this.totalBytesExpected,
-    this.runTime)
-
   final private[this] def consumeIntColumn(batch:VectorizedRowBatch, index:Int):Unit = {
     val intVector: LongColumnVector = batch.cols(index).asInstanceOf[LongColumnVector]
     val isNull = intVector.isNull
@@ -45,6 +35,7 @@ class ORCReadTest extends  AbstractTest {
       if(!isNull(i)){
         val intVal = intVector.vector(i)
         this._sum+=intVal
+        this._validInt+=1
       }
     }
   }
@@ -68,13 +59,26 @@ class ORCReadTest extends  AbstractTest {
       if(!isNull(i)){
         val longVal = longVector.vector(i)
         this._sum+=longVal
+        this._validLong+=1
+      }
+    }
+  }
+
+  final private[this] def consumeDoubleColumn(batch:VectorizedRowBatch, index:Int):Unit = {
+    val doubleVector: DoubleColumnVector = batch.cols(index).asInstanceOf[DoubleColumnVector]
+    val isNull = doubleVector.isNull
+    for (i <- 0 until batch.size) {
+      if(!isNull(i)){
+        val doubleVal = doubleVector.vector(i)
+        this._sum+=doubleVal.toLong
+        this._validDouble+=1
       }
     }
   }
 
   final override def run(): Unit = {
     val all = this.schema.getChildren
-    val s2 = System.nanoTime()
+    val s1 = System.nanoTime()
     while (rows.nextBatch(batch)) {
       /* loop over all the columns */
       for (i <- 0 until all.size()) {
@@ -90,10 +94,9 @@ class ORCReadTest extends  AbstractTest {
       }
       this.totalRows += batch.size
     }
-    val s3 = System.nanoTime()
+    this.runTimeInNanoSecs = System.nanoTime() - s1
     rows.close()
-    this.runTime = s3 - s2
-    println(this._sum + " valid decimal " + this._validDecimal)
+    printStats()
   }
 }
 

@@ -34,12 +34,6 @@ class SFFTest(inputDir:String, parallel:Int){
       }
       end = System.nanoTime()
     }
-
-    override def getResults():TestResult = {
-      /* here we need to run the count */
-      require(totalBytesRead == totalBytesExpected)
-      TestResult(totalRows, totalBytesRead, end - start)
-    }
   }
 
   private val path = new Path("/")
@@ -75,10 +69,10 @@ class SFFTest(inputDir:String, parallel:Int){
   /////////////////////////////////////////
 
   var totalRows = 0L
-  testArr.foreach(x => totalRows+=x.getResults().rows)
+  testArr.foreach(x => totalRows+=x.getResults.rows)
   var totalBytes = 0L
   filesToTest.foreach( x=>  totalBytes+=x._2)
   println(" Runtime is " + (end - start)/1000000 + " msec, rows " + totalRows + " bw: " + (totalBytes * 8)/(end - start) + " Gbps")
-  val runtTime = testArr.map(x => x.getResults().runtimeNanoSec).sorted
+  val runtTime = testArr.map(x => x.getResults.runtimeNanoSec).sorted
   runtTime.foreach( x => println("runtime: " + (x / 1000000) + " msec"))
 }

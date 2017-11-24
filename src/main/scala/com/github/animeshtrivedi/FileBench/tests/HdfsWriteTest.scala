@@ -8,8 +8,6 @@ import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, Tes
 class HdfsWriteTest extends AbstractTest {
   override def init(fileName: String, expectedBytes: Long): Unit = ???
 
-  override def getResults(): TestResult = ???
-
   override def run(): Unit = ???
 }
 

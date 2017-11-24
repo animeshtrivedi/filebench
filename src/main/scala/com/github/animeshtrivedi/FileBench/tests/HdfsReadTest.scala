@@ -10,17 +10,14 @@ import org.apache.hadoop.fs.{FSDataInputStream, Path}
 class HdfsReadTest extends AbstractTest {
   private[this] var instream:FSDataInputStream = _
   private[this] val byteArr = new Array[Byte](1024 * 1024)
-  private[this] var expectedIncomingBytes = 0L
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     val conf = new Configuration()
     val path = new Path(fileName)
     val fileSystem = path.getFileSystem(conf)
     this.instream = fileSystem.open(path)
-    this.expectedIncomingBytes = expectedBytes
+    this.readBytes = expectedBytes
   }
-
-  final override def getResults():TestResult = TestResult(0, this.expectedIncomingBytes, 0)
 
   final override def run(): Unit = {
     var rx = instream.read(byteArr)
@@ -29,7 +26,7 @@ class HdfsReadTest extends AbstractTest {
       bytes+=rx
       rx = instream.read(byteArr)
     }
-    require(this.expectedIncomingBytes == bytes)
+    require(this.readBytes == bytes)
     println (instream + " read " + bytes + " Bytes")
   }
 }

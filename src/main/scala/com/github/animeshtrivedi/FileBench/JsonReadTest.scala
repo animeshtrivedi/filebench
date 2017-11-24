@@ -9,25 +9,18 @@ import org.apache.hadoop.fs.Path
   */
 class JsonReadTest extends AbstractTest {
   private[this] var jsonParser:JsonParser = _
-  private[this] var totalRows = 0L
-  private[this] var runTime = 0L
-  private[this] var totalBytes = 0L
-
-  private[this] var _sum:Long = 0L
-  private[this] var _validDecimal:Long = 0L
 
   override def init(fileName: String, expectedBytes: Long): Unit = {
     val conf = new Configuration()
     val path = new Path(fileName)
     val fileSystem = path.getFileSystem(conf)
     val instream = fileSystem.open(path)
-    this.totalBytes = expectedBytes
+    this.readBytes = expectedBytes
     this.jsonParser = new JsonFactory().createParser(instream)
   }
 
-  override def getResults(): TestResult = TestResult(this.totalRows, this.totalBytes ,this.runTime)
-
   override def run(): Unit = {
+    throw new Exception(" this implementation is not verified ")
     val s = System.nanoTime()
     while(!jsonParser.isClosed){
       var token = jsonParser.nextToken()
@@ -51,8 +44,9 @@ class JsonReadTest extends AbstractTest {
         }
       }
     }
-    this.runTime = System.nanoTime() - s
-    println(this._sum + " valid decimal " + this._validDecimal)
+    this.runTimeInNanoSecs = System.nanoTime() - s
+    printStats()
+    println(" ********** DOUBLE does not exhist here? ")
   }
 }
 

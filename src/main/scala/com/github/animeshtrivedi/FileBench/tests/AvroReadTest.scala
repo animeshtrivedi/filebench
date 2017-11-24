@@ -64,10 +64,6 @@ import scala.util.control.NonFatal
 //}
 
 class AvroReadTest extends  AbstractTest {
-
-  private[this] var totalBytes = 0L
-  private[this] var totalRows = 0L
-  private[this] var runTime = 0L
   private var reuse: GenericRecord = null
   private var reader: DataFileStream[GenericRecord] = _
   private var schema: Schema = _
@@ -76,6 +72,7 @@ class AvroReadTest extends  AbstractTest {
   private var fileName:String = _
 
   override def init(fileName: String, expectedBytes: Long): Unit = {
+    this.readBytes = expectedBytes
     this.fileName = fileName
     this.reader = {
       val conf = new Configuration()
@@ -92,7 +89,7 @@ class AvroReadTest extends  AbstractTest {
     this.arr = columnsList.toArray[Field](this.arr)
     this.positionArr = (0 until columnsList.size()).toArray
     // this works, read the good schema
-    //print("\nSCHEMA: "+this.schema.toString() + "\n")
+    // print("\nSCHEMA: "+this.schema.toString() + "\n")
     //print("\n TYPE:  "+this.schema.getType+"\n")
     //for (i<-0 until columnsList.size()){
     //print("\n\t element name: "+ columnsList.get(i).schema().getFullName + " + type: " + this.arr(i).schema().getType+"\n")

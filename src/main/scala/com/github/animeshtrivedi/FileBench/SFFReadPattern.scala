@@ -13,17 +13,11 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 class SFFReadPattern (inputDir:String, parallel:Int){
 
   class Test1 extends AbstractTest {
-    private var totalBytesRead = 0L
-    private var totalBytesExpected = 0L
-    private var totalRows = 0L
-    private var start = 0L
-    private var end = 0L
     private var reader:HdfsByteBufferReader = _
     private val byteArray = new Array[Byte](256)
 
     override def init(fileName: String, expectedBytes:Long): Unit = {
-      this.totalBytesExpected = expectedBytes
-      this.totalBytesRead = expectedBytes
+      this.readBytes = expectedBytes
       fileSystem.getFileStatus(new Path(fileName))
       val px = new Path(fileName)
       this.reader = new HdfsByteBufferReader(fileSystem.open(px),
@@ -42,35 +36,23 @@ class SFFReadPattern (inputDir:String, parallel:Int){
     }
 
     override def run(): Unit = {
-      start = System.nanoTime()
+      val s1 = System.nanoTime()
       var nextInt = this.reader.readInt()
       while(nextInt > 0){
         readFullByteArray(this.reader, byteArray, nextInt)
         totalRows+=1
         nextInt = this.reader.readInt()
       }
-      end = System.nanoTime()
-    }
-
-    override def getResults():TestResult = {
-      /* here we need to run the count */
-      require(totalBytesRead == totalBytesExpected)
-      TestResult(totalRows, totalBytesRead, end - start)
+      this.runTimeInNanoSecs = System.nanoTime() - s1
     }
   }
 
 
   class TestFastIterator extends AbstractTest {
-    private var totalBytesRead = 0L
-    private var totalBytesExpected = 0L
-    private var totalRows = 0L
-    private var start = 0L
-    private var end = 0L
     private var reader:HdfsByteBufferReader = _
 
     override def init(fileName: String, expectedBytes:Long): Unit = {
-      this.totalBytesExpected = expectedBytes
-      this.totalBytesRead = expectedBytes
+      this.readBytes = expectedBytes
       fileSystem.getFileStatus(new Path(fileName))
       val px = new Path(fileName)
       reader = new HdfsByteBufferReader(fileSystem.open(px),
@@ -79,18 +61,12 @@ class SFFReadPattern (inputDir:String, parallel:Int){
 
     override def run(): Unit = {
       val itr = new FastIteratorRow(reader)
-      start = System.nanoTime()
+      val s1 = System.nanoTime()
       while(itr.hasNext){
         itr.next()
         totalRows+=1
       }
-      end = System.nanoTime()
-    }
-
-    override def getResults():TestResult = {
-      /* here we need to run the count */
-      require(totalBytesRead == totalBytesExpected)
-      TestResult(totalRows, totalBytesRead, end - start)
+      this.runTimeInNanoSecs = System.nanoTime() - s1
     }
   }
 
@@ -127,10 +103,10 @@ class SFFReadPattern (inputDir:String, parallel:Int){
   /////////////////////////////////////////
 
   var totalRows = 0L
-  testArr.foreach(x => totalRows+=x.getResults().rows)
+  testArr.foreach(x => totalRows+=x.getResults.rows)
   var totalBytes = 0L
   filesToTest.foreach( x=>  totalBytes+=x._2)
   println("Runtime is " + (end - start)/1000000 + " msec, rows " + totalRows + " bw: " + (totalBytes * 8)/(end - start) + " Gbps")
-  val runtTime = testArr.map(x => x.getResults().runtimeNanoSec).sorted
+  val runtTime = testArr.map(x => x.getResults.runtimeNanoSec).sorted
   runtTime.foreach( x => println("runtime: " + (x / 1000000) + " msec"))
 }

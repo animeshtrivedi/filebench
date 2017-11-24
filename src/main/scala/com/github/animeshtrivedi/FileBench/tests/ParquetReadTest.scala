@@ -21,14 +21,8 @@ import org.apache.parquet.schema.{MessageType, OriginalType, PrimitiveType}
 class ParquetReadTest extends AbstractTest {
 
   private[this] var parquetFileReader:ParquetFileReader = _
-  private[this] var expectedRows:Long = _
   private[this] var schema:MessageType = _
   private[this] var mdata:FileMetaData = _
-  private[this] var runTime = 0L
-  private[this] var readBytes = 0L
-
-  private[this] var _sum:Long = 0L
-  private[this] var _validDecimal:Long = 0L
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     val conf = new Configuration()
@@ -54,11 +48,9 @@ class ParquetReadTest extends AbstractTest {
 //    }
 
     this.parquetFileReader = ParquetFileReader.open(conf, path)
-    this.expectedRows = parquetFileReader.getRecordCount
+    this.readBytes = parquetFileReader.getRecordCount
     this.readBytes = expectedBytes
   }
-
-  final override def getResults(): TestResult = TestResult(expectedRows, this.readBytes, runTime)
 
   final override def run(): Unit = {
     var pageReadStore:PageReadStore = null
@@ -75,10 +67,12 @@ class ParquetReadTest extends AbstractTest {
           schema, mdata.getCreatedBy)
         for(i <-0 until size){
           val col = colDesc.get(i)
+          // parquet also encodes what was the original type of the filed vs what it is saved as
           val orginal = this.schema.getFields.get(i).getOriginalType
           col.getType match {
             case PrimitiveTypeName.INT32 => consumeIntColumn(colReader, col, Option(orginal), i)
             case PrimitiveTypeName.INT64 => consumeLongColumn(colReader, col, Option(orginal), i)
+            case PrimitiveTypeName.DOUBLE => consumeDoubleColumn(colReader, col, Option(orginal), i)
             case _ => throw new Exception(" NYI ")
           }
         }
@@ -88,9 +82,9 @@ class ParquetReadTest extends AbstractTest {
       case foo: Exception => foo.printStackTrace()
     } finally {
       val s3 = System.nanoTime()
-      runTime = s3 - s2
+      this.runTimeInNanoSecs = s3 - s2
       parquetFileReader.close()
-      println(this._sum + " valid decimal " + this._validDecimal)
+      printStats()
     }
   }
 
@@ -106,6 +100,7 @@ class ParquetReadTest extends AbstractTest {
       }
       creader.consume()
     }
+    ???
     rows
   }
 
@@ -124,10 +119,11 @@ class ParquetReadTest extends AbstractTest {
       }
       creader.consume()
     }
+    ???
     rows
   }
 
-  private [this] def consumeIntColumn(crstore: ColumnReadStoreImpl,
+  private [this] def _consumeIntColumn(crstore: ColumnReadStoreImpl,
                                       column: org.apache.parquet.column.ColumnDescriptor,
                                       original:Option[OriginalType],
                                       index:Int): Long = {
@@ -140,10 +136,30 @@ class ParquetReadTest extends AbstractTest {
     }
   }
 
+  private [this] def consumeIntColumn(crstore: ColumnReadStoreImpl,
+                                       column: org.apache.parquet.column.ColumnDescriptor,
+                                       original:Option[OriginalType],
+                                       index:Int): Long = {
+    require(original.isEmpty)
+    val dmax = column.getMaxDefinitionLevel
+    val creader:ColumnReader = crstore.getColumnReader(column)
+    val rows = creader.getTotalValueCount
+    for (i <- 0L until rows){
+      val dvalue = creader.getCurrentDefinitionLevel
+      if(dvalue == dmax){
+        this._sum+=creader.getInteger
+        this._validInt+=1
+      }
+      creader.consume()
+    }
+    rows
+  }
+
   private [this] def consumeLongColumn(crstore: ColumnReadStoreImpl,
                                        column: org.apache.parquet.column.ColumnDescriptor,
                                        original:Option[OriginalType],
                                        index:Int): Long = {
+    require(original.isEmpty)
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
     val rows = creader.getTotalValueCount
@@ -151,6 +167,26 @@ class ParquetReadTest extends AbstractTest {
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
         this._sum+=creader.getLong
+        this._validLong+=1
+      }
+      creader.consume()
+    }
+    rows
+  }
+
+  private [this] def consumeDoubleColumn(crstore: ColumnReadStoreImpl,
+                                       column: org.apache.parquet.column.ColumnDescriptor,
+                                       original:Option[OriginalType],
+                                       index:Int): Long = {
+    require(original.isEmpty)
+    val dmax = column.getMaxDefinitionLevel
+    val creader:ColumnReader = crstore.getColumnReader(column)
+    val rows = creader.getTotalValueCount
+    for (i <- 0L until rows){
+      val dvalue = creader.getCurrentDefinitionLevel
+      if(dvalue == dmax){
+        this._sum+=creader.getDouble.toLong
+        this._validDouble+=1
       }
       creader.consume()
     }
