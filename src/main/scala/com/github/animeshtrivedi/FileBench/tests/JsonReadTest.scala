@@ -1,6 +1,8 @@
-package com.github.animeshtrivedi.FileBench
+package com.github.animeshtrivedi.FileBench.tests
 
+import com.fasterxml.jackson.core.JsonParser.NumberType
 import com.fasterxml.jackson.core.{JsonFactory, JsonParser, JsonToken}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 
@@ -19,34 +21,45 @@ class JsonReadTest extends AbstractTest {
     this.jsonParser = new JsonFactory().createParser(instream)
   }
 
+  private[this] def extractDouble():Unit = {
+    this._sum+=this.jsonParser.getDoubleValue.toLong
+    this._validDouble+=1
+  }
+
+  private[this] def extractLong():Unit = {
+    this._sum+=this.jsonParser.getLongValue
+    this._validLong+=1
+  }
+
+  private[this] def extractInt():Unit = {
+    this._sum+=this.jsonParser.getIntValue
+    this._validInt+=1
+  }
+
   override def run(): Unit = {
-    throw new Exception(" this implementation is not verified ")
     val s = System.nanoTime()
     while(!jsonParser.isClosed){
       var token = jsonParser.nextToken()
       token match {
         case JsonToken.END_OBJECT => this.totalRows+=1
-        case JsonToken.START_OBJECT => //println (" start object ")
+        case JsonToken.START_OBJECT => // println (" start object ")
         case JsonToken.FIELD_NAME => //println (" filed name as  " + jsonParser.getCurrentName)
-        case JsonToken.VALUE_NUMBER_FLOAT => {
-          //println (" float value " + jsonParser.getFloatValue)
-          this._sum+=jsonParser.getFloatValue.toLong
-          this._validDecimal+=1
+        case JsonToken.VALUE_NUMBER_FLOAT | JsonToken.VALUE_NUMBER_INT  => {
+          jsonParser.getNumberType match {
+            case NumberType.INT => extractInt()
+            case NumberType.DOUBLE => extractDouble()
+            case _ => throw new Exception()
+          }
         }
-        case JsonToken.VALUE_NUMBER_INT => {
-          //println (" int value " + jsonParser.getIntValue)
-          this._sum+=jsonParser.getIntValue
-        }
-        case JsonToken.VALUE_NULL | null => //println(" NULL VALUE here ")
-        case x:AnyRef => {
-          println("**** " + x)
+        case JsonToken.VALUE_NULL | null => println(" NULL VALUE here for ? ")
+        case _ => {
+          println("**** " + token)
           throw new Exception
         }
       }
     }
     this.runTimeInNanoSecs = System.nanoTime() - s
     printStats()
-    println(" ********** DOUBLE does not exhist here? ")
   }
 }
 
