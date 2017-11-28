@@ -7,17 +7,21 @@ import org.apache.commons.cli.*;
  */
 public class ParseOptions {
     private Options options;
-    private String test;
     private int parallel;
     private String inputDir;
+    private String outputDir;
+    private long outItems;
+    private String series;
     private String factory;
 
     public ParseOptions(){
         options = new Options();
-        this.test = "sffread";
         this.parallel = 16;
+        this.series = "long";
+        this.outItems = 1000;
         this.factory = "hdfsread";
         this.inputDir = "/sql/tpcds-sff/store_sales/";
+        this.outputDir = "/sql/output/";
         options.addOption("h", "help", false, "show help.");
         options.addOption("i", "input", true, "input directory location on HDFS-fs.");
         options.addOption("t", "test", true, "test.");
@@ -68,5 +72,13 @@ public class ParseOptions {
 
     public String getInputDir(){
         return this.inputDir;
+    }
+
+    public String getOutputDir(){
+        return this.outputDir;
+    }
+
+    public String getSeries(){
+        return this.series;
     }
 }

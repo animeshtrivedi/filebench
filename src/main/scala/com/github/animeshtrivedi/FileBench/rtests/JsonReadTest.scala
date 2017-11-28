@@ -1,4 +1,4 @@
-package com.github.animeshtrivedi.FileBench.tests
+package com.github.animeshtrivedi.FileBench.rtests
 
 import com.fasterxml.jackson.core.JsonParser.NumberType
 import com.fasterxml.jackson.core.{JsonFactory, JsonParser, JsonToken}

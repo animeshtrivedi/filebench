@@ -1,4 +1,4 @@
-package com.github.animeshtrivedi.FileBench.tests
+package com.github.animeshtrivedi.FileBench.rtests
 
 import java.math.BigInteger
 import java.nio.charset.Charset

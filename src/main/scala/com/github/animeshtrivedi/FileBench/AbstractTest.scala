@@ -14,6 +14,8 @@ abstract class AbstractTest extends Runnable with Serializable {
   protected var _validInt:Long = 0L
   protected var _validLong:Long = 0L
   protected var _validDouble:Long = 0L
+  protected var _validBinary:Long = 0L
+  protected var _validBinarySize:Long = 0L
 
   protected var runTimeInNanoSecs = 0L
   protected var readBytes = 0L
@@ -25,13 +27,15 @@ abstract class AbstractTest extends Runnable with Serializable {
       " | ints: " + this._validInt +
       " longs: " + this._validLong +
       " doubles:" + this._validDouble +
-      " decimals: " + this._validDecimal)
+      " decimals: " + this._validDecimal +
+      " binary " + this._validBinary)
   }
 
   final def getTotalSizeInBytes:Long = {
     (this._validInt * java.lang.Integer.BYTES) +
       (this._validLong * java.lang.Long.BYTES) +
-      (this._validDouble * java.lang.Double.BYTES)
+      (this._validDouble * java.lang.Double.BYTES) +
+    this._validBinarySize
   }
 
   final def sum:Long = {

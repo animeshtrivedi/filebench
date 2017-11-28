@@ -1,4 +1,4 @@
-package com.github.animeshtrivedi.FileBench.tests
+package com.github.animeshtrivedi.FileBench.rtests
 
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
@@ -72,7 +72,8 @@ class ParquetReadTest extends AbstractTest {
             case PrimitiveTypeName.INT32 => consumeIntColumn(colReader, col, Option(orginal), i)
             case PrimitiveTypeName.INT64 => consumeLongColumn(colReader, col, Option(orginal), i)
             case PrimitiveTypeName.DOUBLE => consumeDoubleColumn(colReader, col, Option(orginal), i)
-            case _ => throw new Exception(" NYI ")
+            case PrimitiveTypeName.BINARY => consumeBinaryColumn(colReader, col, Option(orginal), i)
+            case _ => throw new Exception(" NYI " + col.getType)
           }
         }
         this.totalRows+=pageReadStore.getRowCount
@@ -149,6 +150,27 @@ class ParquetReadTest extends AbstractTest {
       if(dvalue == dmax){
         this._sum+=creader.getInteger
         this._validInt+=1
+      }
+      creader.consume()
+    }
+    rows
+  }
+
+  private [this] def consumeBinaryColumn(crstore: ColumnReadStoreImpl,
+                                      column: org.apache.parquet.column.ColumnDescriptor,
+                                      original:Option[OriginalType],
+                                      index:Int): Long = {
+    require(original.isEmpty)
+    val dmax = column.getMaxDefinitionLevel
+    val creader:ColumnReader = crstore.getColumnReader(column)
+    val rows = creader.getTotalValueCount
+    for (i <- 0L until rows){
+      val dvalue = creader.getCurrentDefinitionLevel
+      if(dvalue == dmax){
+        val l = creader.getBinary.length()
+        this._sum+=l
+        this._validBinarySize+=l
+        this._validBinary+=1
       }
       creader.consume()
     }

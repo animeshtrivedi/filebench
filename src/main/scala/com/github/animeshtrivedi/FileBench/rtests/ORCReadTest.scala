@@ -1,4 +1,4 @@
-package com.github.animeshtrivedi.FileBench.tests
+package com.github.animeshtrivedi.FileBench.rtests
 
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
