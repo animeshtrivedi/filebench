@@ -167,9 +167,9 @@ class ParquetReadTest extends AbstractTest {
     for (i <- 0L until rows){
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
-        val l = creader.getBinary.length()
-        this._sum+=l
-        this._validBinarySize+=l
+        val bin = creader.getBinary
+        this._sum+=bin.length()
+        this._validBinarySize+=bin.length()
         this._validBinary+=1
       }
       creader.consume()

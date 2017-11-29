@@ -50,11 +50,30 @@ class SFFReadTest extends  AbstractTest {
     }
   }
 
+  private[this] def _readBinary(row:UnsafeRow, index:Int):Unit= {
+    if (!row.isNullAt(index)){
+      val binary = row.getBinary(index)
+      this._validBinary+=1
+      this._sum+=binary.length
+      this._validBinarySize+=binary.length
+    }
+  }
+
+  private[this] def _readBinaryM(row:UnsafeRow, index:Int):Unit= {
+    if (!row.isNullAt(index)){
+      val size = row.getLong(index).toInt
+      this._validBinary+=1
+      this._sum+=size
+      this._validBinarySize+=size
+    }
+  }
+
   private[this] def consumeUnsafeRow(row:UnsafeRow):Unit= {
     this.colIndex.foreach( f => f._1.dataType match {
       case IntegerType => _readInt(row, f._2)
       case LongType => _readLong(row, f._2)
       case DoubleType => _readDouble(row, f._2)
+      case BinaryType => _readBinaryM(row, f._2)
       case _ => throw new Exception(" not implemented type ")
     })
   }

@@ -5,6 +5,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.exec.vector._
 import org.apache.orc.{OrcFile, RecordReader, TypeDescription}
+import org.apache.parquet.filter2.predicate.Operators.BinaryColumn
 
 /**
   * Created by atr on 19.11.17.
@@ -76,6 +77,21 @@ class ORCReadTest extends  AbstractTest {
     }
   }
 
+  final private[this] def consumeBinaryColumn(batch:VectorizedRowBatch, index:Int):Unit = {
+    val binaryVector: BytesColumnVector = batch.cols(index).asInstanceOf[BytesColumnVector]
+    val isNull = binaryVector.isNull
+    for (i <- 0 until batch.size) {
+      if(!isNull(i)){
+        val binaryVal = binaryVector.vector(i)
+        //println(" size is " + binaryVal.length + " length " + binaryVector.length(i) + " start " + binaryVector.start(i) + " buffer size " + binaryVector.bufferSize() + " batchSzie " + batch.size)
+        // semantics binaryVal.length = sum(batch.size of all elems  binaryVector.length(i)), start is where we can copy the data out.
+        this._sum+=binaryVector.length(i)
+        this._validBinary+=1
+        this._validBinarySize+=binaryVector.length(i)
+      }
+    }
+  }
+
   final override def run(): Unit = {
     val all = this.schema.getChildren
     val s1 = System.nanoTime()
@@ -86,8 +102,9 @@ class ORCReadTest extends  AbstractTest {
           case TypeDescription.Category.LONG => consumeLongColumn(batch, i)
           case TypeDescription.Category.INT => consumeIntColumn(batch, i)
           case TypeDescription.Category.DOUBLE =>  consumeDoubleColumn(batch, i)
+          case TypeDescription.Category.BINARY =>  consumeBinaryColumn(batch, i)
           case _  => {
-            println(all.get(i) + " does not match anything?, please add the use case")
+            println(all.get(i) + " does not match anything?, please add the use case" + all.get(i).getCategory )
             throw new Exception()
           }
         }
