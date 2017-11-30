@@ -177,11 +177,8 @@ class ParquetReadTest extends AbstractTest {
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
         val x= creader.getInteger
-        println( " int value as " + x + " > " + creader.getDescriptor.getPath.foreach(print))
         this._sum+=x
         this._validInt+=1
-        if(this._validInt > 100)
-          ???
       }
       creader.consume()
     }
