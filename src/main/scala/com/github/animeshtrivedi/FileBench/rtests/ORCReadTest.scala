@@ -5,7 +5,6 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.exec.vector._
 import org.apache.orc.{OrcFile, RecordReader, TypeDescription}
-import org.apache.parquet.filter2.predicate.Operators.BinaryColumn
 
 /**
   * Created by atr on 19.11.17.

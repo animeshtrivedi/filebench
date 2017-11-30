@@ -1,14 +1,20 @@
 package com.github.animeshtrivedi.FileBench.rtests
 
+import java.util
+
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.column.ColumnReader
 import org.apache.parquet.column.impl.ColumnReadStoreImpl
 import org.apache.parquet.column.page.PageReadStore
+import org.apache.parquet.filter2.compat.FilterCompat
+import org.apache.parquet.filter2.compat.RowGroupFilter.filterRowGroups
+import org.apache.parquet.filter2.predicate.FilterApi.intColumn
+import org.apache.parquet.filter2.predicate.{FilterApi, FilterPredicate}
 import org.apache.parquet.format.converter.ParquetMetadataConverter
-import org.apache.parquet.hadoop.ParquetFileReader
-import org.apache.parquet.hadoop.metadata.{FileMetaData, ParquetMetadata}
+import org.apache.parquet.hadoop.{ParquetFileReader, ParquetInputFormat}
+import org.apache.parquet.hadoop.metadata.{BlockMetaData, FileMetaData, ParquetMetadata}
 import org.apache.parquet.io.api.{GroupConverter, PrimitiveConverter}
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
 import org.apache.parquet.schema.{MessageType, OriginalType}
@@ -16,22 +22,6 @@ import org.apache.parquet.schema.{MessageType, OriginalType}
 /**
   * Created by atr on 19.11.17.
   */
-
-class ParquetReadTest extends AbstractTest {
-
-  private[this] var parquetFileReader:ParquetFileReader = _
-  private[this] var schema:MessageType = _
-  private[this] var mdata:FileMetaData = _
-
-  final override def init(fileName: String, expectedBytes: Long): Unit = {
-    val conf = new Configuration()
-    val path = new Path(fileName)
-    val readFooter:ParquetMetadata = ParquetFileReader.readFooter(conf,
-      path,
-      ParquetMetadataConverter.NO_FILTER)
-    this.mdata = readFooter.getFileMetaData
-    this.schema = mdata.getSchema
-
 //    println(this.schema)
 //    for (i <- 0 until this.schema.getColumns.size()){
 //      val ty = this.schema.getType(i)
@@ -46,8 +36,46 @@ class ParquetReadTest extends AbstractTest {
 //      }
 //    }
 
-    this.parquetFileReader = ParquetFileReader.open(conf, path)
-    this.readBytes = parquetFileReader.getRecordCount
+class ParquetReadTest extends AbstractTest {
+
+  private[this] var parquetFileReader:ParquetFileReader = _
+  private[this] var schema:MessageType = _
+  private[this] var mdata:FileMetaData = _
+
+  private[this] def generateFilters(gen:Boolean, footer:ParquetMetadata):util.List[BlockMetaData] = {
+    if(gen){
+      val maxFilter = FilterApi.gt(intColumn("value"),
+        1945720194.asInstanceOf[java.lang.Integer])
+
+      val minFilter = FilterApi.lt(intColumn("value"),
+        -1832563198.asInstanceOf[java.lang.Integer])
+
+      val filterPredicate = FilterApi.or(maxFilter, minFilter)
+      val filter = FilterCompat.get(filterPredicate, null)
+      // at this point we have all the details
+      import org.apache.parquet.filter2.compat.RowGroupFilter.filterRowGroups
+      filterRowGroups(filter, footer.getBlocks, footer.getFileMetaData.getSchema)
+    } else {
+      footer.getBlocks
+    }
+  }
+
+  final override def init(fileName: String, expectedBytes: Long): Unit = {
+    val conf = new Configuration()
+    val path = new Path(fileName)
+    /* notice this is metadata filter - I do not know where to put the data filter yet */
+    val readFooter:ParquetMetadata = ParquetFileReader.readFooter(conf,
+      path,
+      ParquetMetadataConverter.NO_FILTER)
+    this.mdata = readFooter.getFileMetaData
+    this.schema = mdata.getSchema
+    this.parquetFileReader = new ParquetFileReader(conf,
+      this.mdata,
+      path,
+      generateFilters(false, readFooter),
+      this.schema.getColumns)
+    // I had this before which does not support putting filters - ParquetFileReader.(conf, path).
+    println( " expected in coming records are : " + parquetFileReader.getRecordCount)
     this.readBytes = expectedBytes
   }
 
@@ -148,8 +176,12 @@ class ParquetReadTest extends AbstractTest {
     for (i <- 0L until rows){
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
-        this._sum+=creader.getInteger
+        val x= creader.getInteger
+        println( " int value as " + x + " > " + creader.getDescriptor.getPath.foreach(print))
+        this._sum+=x
         this._validInt+=1
+        if(this._validInt > 100)
+          ???
       }
       creader.consume()
     }
