@@ -42,16 +42,25 @@ class ParquetReadTest extends AbstractTest {
   private[this] var schema:MessageType = _
   private[this] var mdata:FileMetaData = _
 
-  private[this] def generateFilters(gen:Boolean, footer:ParquetMetadata):util.List[BlockMetaData] = {
+  private[this] def generateFilters():FilterPredicate = {
+    //    val maxFilter = FilterApi.gt(intColumn("value"),
+    //      1945720194.asInstanceOf[java.lang.Integer])
+    //    val minFilter = FilterApi.lt(intColumn("value"),
+    //      -1832563198.asInstanceOf[java.lang.Integer])
+    //    FilterApi.or(maxFilter, minFilter)
+
+    FilterApi.lt(intColumn("intKey"),
+      -1.asInstanceOf[java.lang.Integer])
+  }
+
+  private[this] def installFilters(gen:Boolean, footer:ParquetMetadata):util.List[BlockMetaData] = {
     if(gen){
-      val maxFilter = FilterApi.gt(intColumn("value"),
-        1945720194.asInstanceOf[java.lang.Integer])
-
-      val minFilter = FilterApi.lt(intColumn("value"),
-        -1832563198.asInstanceOf[java.lang.Integer])
-
-      val filterPredicate = FilterApi.or(maxFilter, minFilter)
-      val filter = FilterCompat.get(filterPredicate, null)
+      /* what happens in the spark code the filters are generated and then decoded into the Hadoop
+      conf with the function ParquetInputFormat.setFilterPredicate. Then they are extracted at the
+      executor side by calling org.apache.parquet.hadoop.ParquetInputFormat.getFilter.getFilter(configuration);
+      and then they are used to filter out blocks as shown below.
+       */
+      val filter = FilterCompat.get(generateFilters(), null)
       // at this point we have all the details
       import org.apache.parquet.filter2.compat.RowGroupFilter.filterRowGroups
       filterRowGroups(filter, footer.getBlocks, footer.getFileMetaData.getSchema)
@@ -72,7 +81,7 @@ class ParquetReadTest extends AbstractTest {
     this.parquetFileReader = new ParquetFileReader(conf,
       this.mdata,
       path,
-      generateFilters(false, readFooter),
+      installFilters(false, readFooter),
       this.schema.getColumns)
     // I had this before which does not support putting filters - ParquetFileReader.(conf, path).
     println( " expected in coming records are : " + parquetFileReader.getRecordCount)
@@ -118,7 +127,7 @@ class ParquetReadTest extends AbstractTest {
   }
 
   private [this] def _consumeIntColumn(crstore: ColumnReadStoreImpl,
-                                      column: org.apache.parquet.column.ColumnDescriptor):Long = {
+                                       column: org.apache.parquet.column.ColumnDescriptor):Long = {
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
     val rows = creader.getTotalValueCount
@@ -134,7 +143,7 @@ class ParquetReadTest extends AbstractTest {
   }
 
   private [this] def _consumeInt2DecimalColumn(crstore: ColumnReadStoreImpl,
-                                       column: org.apache.parquet.column.ColumnDescriptor, index:Int):Long = {
+                                               column: org.apache.parquet.column.ColumnDescriptor, index:Int):Long = {
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
     val dd = this.schema.getType(index).asPrimitiveType().getDecimalMetadata
@@ -153,9 +162,9 @@ class ParquetReadTest extends AbstractTest {
   }
 
   private [this] def _consumeIntColumn(crstore: ColumnReadStoreImpl,
-                                      column: org.apache.parquet.column.ColumnDescriptor,
-                                      original:Option[OriginalType],
-                                      index:Int): Long = {
+                                       column: org.apache.parquet.column.ColumnDescriptor,
+                                       original:Option[OriginalType],
+                                       index:Int): Long = {
     original match {
       case Some(i) => i match {
         case OriginalType.DECIMAL => _consumeInt2DecimalColumn(crstore, column, index)
@@ -166,9 +175,9 @@ class ParquetReadTest extends AbstractTest {
   }
 
   private [this] def consumeIntColumn(crstore: ColumnReadStoreImpl,
-                                       column: org.apache.parquet.column.ColumnDescriptor,
-                                       original:Option[OriginalType],
-                                       index:Int): Long = {
+                                      column: org.apache.parquet.column.ColumnDescriptor,
+                                      original:Option[OriginalType],
+                                      index:Int): Long = {
     require(original.isEmpty)
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
@@ -186,9 +195,9 @@ class ParquetReadTest extends AbstractTest {
   }
 
   private [this] def consumeBinaryColumn(crstore: ColumnReadStoreImpl,
-                                      column: org.apache.parquet.column.ColumnDescriptor,
-                                      original:Option[OriginalType],
-                                      index:Int): Long = {
+                                         column: org.apache.parquet.column.ColumnDescriptor,
+                                         original:Option[OriginalType],
+                                         index:Int): Long = {
     require(original.isEmpty)
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
@@ -226,9 +235,9 @@ class ParquetReadTest extends AbstractTest {
   }
 
   private [this] def consumeDoubleColumn(crstore: ColumnReadStoreImpl,
-                                       column: org.apache.parquet.column.ColumnDescriptor,
-                                       original:Option[OriginalType],
-                                       index:Int): Long = {
+                                         column: org.apache.parquet.column.ColumnDescriptor,
+                                         original:Option[OriginalType],
+                                         index:Int): Long = {
     require(original.isEmpty)
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
