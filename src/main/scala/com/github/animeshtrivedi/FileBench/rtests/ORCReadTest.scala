@@ -4,6 +4,7 @@ import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.exec.vector._
+import org.apache.hadoop.hive.ql.io.sarg.SearchArgument
 import org.apache.orc.{OrcFile, RecordReader, TypeDescription}
 
 /**

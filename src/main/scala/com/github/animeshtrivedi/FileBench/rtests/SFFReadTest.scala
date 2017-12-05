@@ -1,9 +1,9 @@
 package com.github.animeshtrivedi.FileBench.rtests
 
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.simplefileformat.SimpleFileFormat
+import org.apache.spark.sql.simplefileformat.priv.SFFRow
 import org.apache.spark.sql.types._
 
 /**
@@ -11,79 +11,71 @@ import org.apache.spark.sql.types._
   */
 class SFFReadTest extends  AbstractTest {
   private[this] val sff = new SimpleFileFormat
-  private[this] var itr:Iterator[InternalRow] = _
+  private[this] var itr:Iterator[SFFRow] = _
   private[this] var schema:StructType = _
-  private[this] var colIndex:Array[(StructField, Int)] = _
+  private[this] var fastReaders:Array[SFFRow => Unit] = _
+  private[this] var schemaArray:Array[DataType] = _
+  private[this] var numCols:Int = _
 
-  final override def init(fileName: String, expectedBytes: Long): Unit = {
-    this.readBytes = expectedBytes
-    this.itr = sff.buildRowIterator(fileName)
-    this.schema = sff.getSchemaFromDatafile(fileName)
-    this.colIndex = this.schema.fields.zipWithIndex
-  }
-
-  private[this] def _readInt(row:UnsafeRow, index:Int):Unit= {
-    if (!row.isNullAt(index)) {
-      this._sum += row.getInt(index)
-      this._validInt += 1
-    }
-  }
-
-  private[this] def _readLong(row:UnsafeRow, index:Int):Unit= {
-    if (!row.isNullAt(index)) {
-      this._sum += row.getLong(index)
+  private[this] val extractLongFunc:(Int, SFFRow)=>Unit = (ordinal:Int, row:SFFRow) => {
+    if(!row.isNullAt(ordinal)){
+      this._sum+=row.getLong(ordinal)
       this._validLong+=1
     }
   }
 
-  private[this] def _readDouble(row:UnsafeRow, index:Int):Unit= {
-    if (!row.isNullAt(index)){
-      this._sum+=row.getDouble(index).toLong
-      this._validDouble+=1
+  private[this] val extractIntFunc:(Int, SFFRow)=>Unit = (ordinal:Int, row:SFFRow) => {
+    if(!row.isNullAt(ordinal)){
+      this._sum+=row.getInt(ordinal)
+      this._validInt+=1
     }
   }
 
-  private[this] def _readDecimal(row:UnsafeRow, index:Int, d:DecimalType):Unit= {
-    if (!row.isNullAt(index)){
-      this._validDecimal+=1
-      this._sum+=BigDecimal(row.getLong(index), d.scale).toDouble.toLong
+  final override def init(fileName: String, expectedBytes: Long): Unit = {
+    this.readBytes = expectedBytes
+    this.itr = sff.buildRowIteratorX(fileName)
+    this.schema = sff.getSchemaFromDatafile(fileName)
+    this.schemaArray = this.schema.fields.map(fx => fx.dataType)
+    this.numCols = this.schema.fields.length
+    //    this.fastReaders = new Array[SFFRow => Unit](this.schema.size)
+    //    for(i <- this.fastReaders.indices){
+    //      this.schema.fields(i).dataType match {
+    //        case LongType => this.fastReaders(i) = extractLongFunc(i, _:SFFRow)
+    //        case IntegerType => this.fastReaders(i) = extractIntFunc(i, _:SFFRow)
+    //        case _ => throw new Exception
+    //      }
+    //    }
+  }
+
+  private[this] def consumeSFFRowX2(row:SFFRow):Unit= {
+    // TODO: to see if scala.Function are inlined or not?
+    for(i <- 0 until numCols){
+      this.fastReaders(i)(row)
     }
   }
 
-  private[this] def _readBinary(row:UnsafeRow, index:Int):Unit= {
-    if (!row.isNullAt(index)){
-      val binary = row.getBinary(index)
-      this._validBinary+=1
-      this._sum+=binary.length
-      this._validBinarySize+=binary.length
+  private[this] def consumeSFFRowX4(row:SFFRow):Unit= {
+    for(i <- 0 until numCols){
+      this.schemaArray(i) match {
+        case IntegerType => if(!row.isNullAt(i)) {
+          this._validInt += 1
+          this._sum += row.getInt(i)
+        }
+        case LongType => if(!row.isNullAt(i)) {
+          this._validLong += 1
+          this._sum += row.getLong(i)
+        }
+        case _ => throw new Exception(" not implemented type ")
+      }
     }
-  }
-
-  private[this] def _readBinaryM(row:UnsafeRow, index:Int):Unit= {
-    if (!row.isNullAt(index)){
-      val size = row.getLong(index).toInt
-      this._validBinary+=1
-      this._sum+=size
-      this._validBinarySize+=size
-    }
-  }
-
-  private[this] def consumeUnsafeRow(row:UnsafeRow):Unit= {
-    this.colIndex.foreach( f => f._1.dataType match {
-      case IntegerType => _readInt(row, f._2)
-      case LongType => _readLong(row, f._2)
-      case DoubleType => _readDouble(row, f._2)
-      case BinaryType => _readBinaryM(row, f._2)
-      case _ => throw new Exception(" not implemented type ")
-    })
   }
 
   final override def run(): Unit = {
     /* here we need to consume the iterator */
     val s1 = System.nanoTime()
     while(itr.hasNext){
-      consumeUnsafeRow(itr.next().asInstanceOf[UnsafeRow])
-      //itr.next().asInstanceOf[UnsafeRow]
+      val row = itr.next()
+      consumeSFFRowX4(row)
       totalRows+=1
     }
     this.runTimeInNanoSecs = System.nanoTime() - s1
