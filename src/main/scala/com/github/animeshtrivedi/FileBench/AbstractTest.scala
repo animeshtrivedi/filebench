@@ -42,6 +42,18 @@ abstract class AbstractTest extends Runnable with Serializable {
     this._sum
   }
 
+  final def validInt:Long = {
+    this._validInt
+  }
+
+  final def validLong:Long = {
+    this._validLong
+  }
+
+  final def validDouble:Long = {
+    this._validDouble
+  }
+
   final def getResults:TestResult = TestResult(this.totalRows, this.readBytes, this.runTimeInNanoSecs)
 
   def init(fileName:String, expectedBytes:Long)

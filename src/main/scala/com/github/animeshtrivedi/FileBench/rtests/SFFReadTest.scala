@@ -54,19 +54,59 @@ class SFFReadTest extends  AbstractTest {
     }
   }
 
-  private[this] def consumeSFFRowX4(row:SFFRow):Unit= {
+  private[this] def consumeSFFRowX4Debug(row:SFFRow):Unit= {
+    val sb = new StringBuilder
     for(i <- 0 until numCols){
       this.schemaArray(i) match {
         case IntegerType => if(!row.isNullAt(i)) {
           this._validInt += 1
-          this._sum += row.getInt(i)
+          val x = row.getInt(i)
+          this._sum += x
+          sb.append(" " + x + " ")
+        } else {
+          sb.append(" null ")
         }
         case LongType => if(!row.isNullAt(i)) {
           this._validLong += 1
+          val x = row.getLong(i)
+          this._sum += x
+          sb.append(" " + x + " ")
+        }else {
+          sb.append(" null ")
+        }
+        case DoubleType => if(!row.isNullAt(i)) {
+          this._validDouble += 1
+          val x = row.getDouble(i)
+          this._sum += x.toLong
+          sb.append(" " + x + " ")
+        }else {
+          sb.append(" null ")
+        }
+        case _ => throw new Exception(" not implemented type " + this.schemaArray(i))
+      }
+    }
+    println(sb.mkString)
+  }
+
+  private[this] def consumeSFFRowX4(row:SFFRow):Unit= {
+    var i = 0
+    while (i < numCols) {
+      this.schemaArray(i) match {
+        case IntegerType => if (!row.isNullAt(i)) {
+          this._validInt += 1
+          this._sum += row.getInt(i)
+        }
+        case LongType => if (!row.isNullAt(i)) {
+          this._validLong += 1
           this._sum += row.getLong(i)
         }
-        case _ => throw new Exception(" not implemented type ")
+        case DoubleType => if (!row.isNullAt(i)) {
+          this._validDouble += 1
+          this._sum += row.getDouble(i).toLong
+        }
+        case _ => throw new Exception(" not implemented type " + this.schemaArray(i))
       }
+      i+=1
     }
   }
 

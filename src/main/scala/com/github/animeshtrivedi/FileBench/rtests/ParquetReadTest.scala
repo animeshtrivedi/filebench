@@ -84,7 +84,7 @@ class ParquetReadTest extends AbstractTest {
       installFilters(false, readFooter),
       this.schema.getColumns)
     // I had this before which does not support putting filters - ParquetFileReader.(conf, path).
-    println( " expected in coming records are : " + parquetFileReader.getRecordCount)
+    //println( " expected in coming records are : " + parquetFileReader.getRecordCount)
     this.readBytes = expectedBytes
   }
 
