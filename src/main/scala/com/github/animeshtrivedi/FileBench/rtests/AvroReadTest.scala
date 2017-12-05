@@ -61,8 +61,8 @@ class AvroReadTest extends  AbstractTest {
   private var reuse: GenericRecord = null
   private var reader: DataFileStream[GenericRecord] = _
   private var schema: Schema = _
+  private var numCols: Int = _
   private var arr:Array[Field] = _
-  private var positionArr:Array[Int] = _
   private var fileName:String = _
 
   override def init(fileName: String, expectedBytes: Long): Unit = {
@@ -81,7 +81,7 @@ class AvroReadTest extends  AbstractTest {
     val columnsList = this.schema.getFields
     this.arr = new Array[Field](columnsList.size())
     this.arr = columnsList.toArray[Field](this.arr)
-    this.positionArr = (0 until columnsList.size()).toArray
+    this.numCols = columnsList.size()
     // this works, read the good schema
     // print("\nSCHEMA: "+this.schema.toString() + "\n")
     //print("\n TYPE:  "+this.schema.getType+"\n")
@@ -92,10 +92,11 @@ class AvroReadTest extends  AbstractTest {
 
   override def run(): Unit = {
     val s1 = System.nanoTime()
+    var i = 0
     while (this.reader.hasNext) {
       this.reuse = this.reader.next(this.reuse)
-      this.positionArr.foreach(f => {
-        val x = this.reuse.get(f)
+      while (i < numCols) {
+        val x = this.reuse.get(i)
         if (x != null) {
           x match {
             case i: java.lang.Integer => {
@@ -113,7 +114,8 @@ class AvroReadTest extends  AbstractTest {
             case _ => throw new Exception
           }
         }
-      })
+        i+=1
+      }
       this.totalRows += 1
     }
     this.runTimeInNanoSecs = System.nanoTime() - s1

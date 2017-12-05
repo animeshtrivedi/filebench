@@ -4,7 +4,6 @@ import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.exec.vector._
-import org.apache.hadoop.hive.ql.io.sarg.SearchArgument
 import org.apache.orc.{OrcFile, RecordReader, TypeDescription}
 
 /**
@@ -32,55 +31,64 @@ class ORCReadTest extends  AbstractTest {
   final private[this] def consumeIntColumn(batch:VectorizedRowBatch, index:Int):Unit = {
     val intVector: LongColumnVector = batch.cols(index).asInstanceOf[LongColumnVector]
     val isNull = intVector.isNull
-    for (i <- 0 until batch.size) {
+    var i = 0
+    while ( i < batch.size) {
       if(!isNull(i)){
         val intVal = intVector.vector(i)
         this._sum+=intVal
         this._validInt+=1
       }
+      i+=1
     }
   }
 
   final private[this] def consumeDecimalColumn(batch:VectorizedRowBatch, index:Int):Unit = {
     val decimalVector: DecimalColumnVector = batch.cols(index).asInstanceOf[DecimalColumnVector]
     val isNull = decimalVector.isNull
-    for (i <- 0 until batch.size) {
+    var i = 0
+    while ( i < batch.size) {
       if(!isNull(i)){
         val decimalVal = decimalVector.vector(i).doubleValue()
         this._sum+=decimalVal.toLong
         this._validDecimal+=1
       }
+      i+=1
     }
   }
 
   final private[this] def consumeLongColumn(batch:VectorizedRowBatch, index:Int):Unit = {
     val longVector: LongColumnVector = batch.cols(index).asInstanceOf[LongColumnVector]
     val isNull = longVector.isNull
-    for (i <- 0 until batch.size) {
+    var i = 0
+    while ( i < batch.size) {
       if(!isNull(i)){
         val longVal = longVector.vector(i)
         this._sum+=longVal
         this._validLong+=1
       }
+      i+=1
     }
   }
 
   final private[this] def consumeDoubleColumn(batch:VectorizedRowBatch, index:Int):Unit = {
     val doubleVector: DoubleColumnVector = batch.cols(index).asInstanceOf[DoubleColumnVector]
     val isNull = doubleVector.isNull
-    for (i <- 0 until batch.size) {
+    var i = 0
+    while ( i < batch.size) {
       if(!isNull(i)){
         val doubleVal = doubleVector.vector(i)
         this._sum+=doubleVal.toLong
         this._validDouble+=1
       }
+      i+=1
     }
   }
 
   final private[this] def consumeBinaryColumn(batch:VectorizedRowBatch, index:Int):Unit = {
     val binaryVector: BytesColumnVector = batch.cols(index).asInstanceOf[BytesColumnVector]
     val isNull = binaryVector.isNull
-    for (i <- 0 until batch.size) {
+    var i = 0
+    while ( i < batch.size) {
       if(!isNull(i)){
         val binaryVal = binaryVector.vector(i)
         //println(" size is " + binaryVal.length + " length " + binaryVector.length(i) + " start " + binaryVector.start(i) + " buffer size " + binaryVector.bufferSize() + " batchSzie " + batch.size)
@@ -89,6 +97,7 @@ class ORCReadTest extends  AbstractTest {
         this._validBinary+=1
         this._validBinarySize+=binaryVector.length(i)
       }
+      i+=1
     }
   }
 
@@ -97,7 +106,8 @@ class ORCReadTest extends  AbstractTest {
     val s1 = System.nanoTime()
     while (rows.nextBatch(batch)) {
       /* loop over all the columns */
-      for (i <- 0 until all.size()) {
+      var i = 0
+      while (i < all.size()) {
         all.get(i).getCategory match {
           case TypeDescription.Category.LONG => consumeLongColumn(batch, i)
           case TypeDescription.Category.INT => consumeIntColumn(batch, i)
@@ -108,6 +118,7 @@ class ORCReadTest extends  AbstractTest {
             throw new Exception()
           }
         }
+        i+=1
       }
       this.totalRows += batch.size
     }

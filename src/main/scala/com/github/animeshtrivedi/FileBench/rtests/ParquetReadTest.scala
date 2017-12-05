@@ -9,11 +9,10 @@ import org.apache.parquet.column.ColumnReader
 import org.apache.parquet.column.impl.ColumnReadStoreImpl
 import org.apache.parquet.column.page.PageReadStore
 import org.apache.parquet.filter2.compat.FilterCompat
-import org.apache.parquet.filter2.compat.RowGroupFilter.filterRowGroups
 import org.apache.parquet.filter2.predicate.FilterApi.intColumn
 import org.apache.parquet.filter2.predicate.{FilterApi, FilterPredicate}
 import org.apache.parquet.format.converter.ParquetMetadataConverter
-import org.apache.parquet.hadoop.{ParquetFileReader, ParquetInputFormat}
+import org.apache.parquet.hadoop.ParquetFileReader
 import org.apache.parquet.hadoop.metadata.{BlockMetaData, FileMetaData, ParquetMetadata}
 import org.apache.parquet.io.api.{GroupConverter, PrimitiveConverter}
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
@@ -101,7 +100,8 @@ class ParquetReadTest extends AbstractTest {
       while (pageReadStore != null) {
         val colReader = new ColumnReadStoreImpl(pageReadStore, conv,
           schema, mdata.getCreatedBy)
-        for(i <-0 until size){
+        var i = 0
+        while (i < size){
           val col = colDesc.get(i)
           // parquet also encodes what was the original type of the filed vs what it is saved as
           val orginal = this.schema.getFields.get(i).getOriginalType
@@ -112,6 +112,7 @@ class ParquetReadTest extends AbstractTest {
             case PrimitiveTypeName.BINARY => consumeBinaryColumn(colReader, col, Option(orginal), i)
             case _ => throw new Exception(" NYI " + col.getType)
           }
+          i+=1
         }
         this.totalRows+=pageReadStore.getRowCount
         pageReadStore = parquetFileReader.readNextRowGroup()
@@ -182,7 +183,8 @@ class ParquetReadTest extends AbstractTest {
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
     val rows = creader.getTotalValueCount
-    for (i <- 0L until rows){
+    var i = 0L
+    while (i < rows){
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
         val x= creader.getInteger
@@ -190,6 +192,7 @@ class ParquetReadTest extends AbstractTest {
         this._validInt+=1
       }
       creader.consume()
+      i+=1L
     }
     rows
   }
@@ -202,7 +205,8 @@ class ParquetReadTest extends AbstractTest {
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
     val rows = creader.getTotalValueCount
-    for (i <- 0L until rows){
+    var i = 0L
+    while (i < rows){
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
         val bin = creader.getBinary
@@ -211,6 +215,7 @@ class ParquetReadTest extends AbstractTest {
         this._validBinary+=1
       }
       creader.consume()
+      i+=1L
     }
     rows
   }
@@ -223,13 +228,15 @@ class ParquetReadTest extends AbstractTest {
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
     val rows = creader.getTotalValueCount
-    for (i <- 0L until rows){
+    var i = 0L
+    while (i < rows){
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
         this._sum+=creader.getLong
         this._validLong+=1
       }
       creader.consume()
+      i+=1L
     }
     rows
   }
@@ -242,13 +249,15 @@ class ParquetReadTest extends AbstractTest {
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
     val rows = creader.getTotalValueCount
-    for (i <- 0L until rows){
+    var i = 0L
+    while (i < rows){
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
         this._sum+=creader.getDouble.toLong
         this._validDouble+=1
       }
       creader.consume()
+      i+=1L
     }
     rows
   }

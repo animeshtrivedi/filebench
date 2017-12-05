@@ -1,7 +1,6 @@
 package com.github.animeshtrivedi.FileBench.rtests
 
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.simplefileformat.SimpleFileFormat
 import org.apache.spark.sql.simplefileformat.priv.SFFRow
 import org.apache.spark.sql.types._
@@ -49,14 +48,17 @@ class SFFReadTest extends  AbstractTest {
 
   private[this] def consumeSFFRowX2(row:SFFRow):Unit= {
     // TODO: to see if scala.Function are inlined or not?
-    for(i <- 0 until numCols){
+    var i = 0
+    while (i < numCols){
       this.fastReaders(i)(row)
+      i+=1
     }
   }
 
   private[this] def consumeSFFRowX4Debug(row:SFFRow):Unit= {
     val sb = new StringBuilder
-    for(i <- 0 until numCols){
+    var i = 0
+    while (i < numCols){
       this.schemaArray(i) match {
         case IntegerType => if(!row.isNullAt(i)) {
           this._validInt += 1
@@ -84,6 +86,7 @@ class SFFReadTest extends  AbstractTest {
         }
         case _ => throw new Exception(" not implemented type " + this.schemaArray(i))
       }
+      i+=1
     }
     println(sb.mkString)
   }
