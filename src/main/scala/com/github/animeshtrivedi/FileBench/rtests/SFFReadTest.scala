@@ -134,7 +134,7 @@ class SFFReadTest extends  AbstractTest {
     val s1 = System.nanoTime()
     while(itr.hasNext){
       val row = itr.next()
-      consumeSFFROWX4(row)
+      consumeSFFROWX4Debug(row)
       totalRows+=1
     }
     this.runTimeInNanoSecs = System.nanoTime() - s1
