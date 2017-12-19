@@ -13,21 +13,42 @@ public class ArrowOutputStream implements WritableByteChannel {
 
     private FSDataOutputStream outStream;
     private Boolean isOpen;
+    private byte[] tempBuffer;
 
     public ArrowOutputStream(FSDataOutputStream outStream){
         this.outStream = outStream;
         this.isOpen = true;
+        this.tempBuffer = new byte[1024*1024]; // 1MB buffering
     }
+    private int writeDirectBuffer(ByteBuffer src) throws IOException {
+        int remaining = src.remaining();
+        int soFar = 0;
+        while(soFar < remaining){
+            int toPush = Math.min(remaining - soFar, this.tempBuffer.length);
+            // this will move the position index
+            src.get(this.tempBuffer, 0, toPush);
+            // i have no way of knowing how much can i push at HDFS
+            this.outStream.write(this.tempBuffer, 0, toPush);
+            soFar+=toPush;
+        }
+        return remaining;
+    }
+
+    private int writeHeapBuffer(ByteBuffer src) throws IOException {
+        int remaining = src.remaining();
+        // get the heap buffer directly and copy
+        this.outStream.write(src.array());
+        src.position(src.position() + remaining);
+        return remaining;
+    }
+
     @Override
     public int write(ByteBuffer src) throws IOException {
-        int remaining = src.remaining();
         if(src.isDirect()){
-            // get the heap buffer directly and copy
-            this.outStream.write(src.array());
-            src.position(src.position() + remaining);
-            return remaining;
+            return writeDirectBuffer(src);
+        } else {
+            return writeHeapBuffer(src);
         }
-        throw new IOException(" Direct buffers are not imple");
     }
 
     @Override
