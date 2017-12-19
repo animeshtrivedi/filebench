@@ -21,9 +21,10 @@ public class ParseOptions {
         this.outItems = 1000;
         this.factory = "hdfsread";
         this.inputDir = "/sql/tpcds-sff/store_sales/";
-        this.outputDir = "/sql/output/";
+        this.outputDir = "/filebench-output/";
         options.addOption("h", "help", false, "show help.");
-        options.addOption("i", "input", true, "input directory location on HDFS-fs.");
+        options.addOption("i", "input", true, "input directory location on an HDFS-compatible fs.");
+        options.addOption("o", "output", true, "output directory location on an HDFS-compatible fs.");
         options.addOption("t", "test", true, "test.");
         options.addOption("p", "parallel", true, "parallel instances.");
     }
@@ -49,6 +50,10 @@ public class ParseOptions {
 
             if (cmd.hasOption("i")) {
                 this.inputDir = cmd.getOptionValue("i").trim();
+            }
+
+            if (cmd.hasOption("o")) {
+                this.outputDir = cmd.getOptionValue("w").trim();
             }
 
             if (cmd.hasOption("t")) {
