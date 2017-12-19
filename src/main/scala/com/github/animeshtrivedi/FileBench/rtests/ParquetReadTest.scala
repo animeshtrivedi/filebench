@@ -2,6 +2,7 @@ package com.github.animeshtrivedi.FileBench.rtests
 
 import java.util
 
+import com.github.animeshtrivedi.FileBench.helper.DumpGroupConverter
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -260,16 +261,6 @@ class ParquetReadTest extends AbstractTest {
       i+=1L
     }
     rows
-  }
-
-  private [this] class DumpGroupConverter extends GroupConverter {
-    final def start() {}
-    final def end() {}
-    final def getConverter(fieldIndex: Int) = new DumpConverter
-  }
-
-  private [this] class DumpConverter extends PrimitiveConverter {
-    final override def asGroupConverter = new DumpGroupConverter
   }
 }
 
