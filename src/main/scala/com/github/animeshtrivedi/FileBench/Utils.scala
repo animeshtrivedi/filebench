@@ -122,7 +122,8 @@ object Utils {
       case "orcread" => ORCReadTest
       case "avroread" => AvroReadTest
       case "jsonread" => JsonReadTest
-      case _ => throw new Exception(" whoa ...")
+      case "pq2arrow" => ParquetToArrowTestFrameWork
+      case _ => throw new Exception(" whoa ..., no test found with the name : " + str)
     }
   }
 }
