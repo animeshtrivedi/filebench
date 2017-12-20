@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.dictionary.DictionaryProvider;
-import org.apache.arrow.vector.file.ArrowFileWriter;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -15,7 +14,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.orc.FileMetadata;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.ColumnReader;
 import org.apache.parquet.column.impl.ColumnReadStoreImpl;
@@ -24,27 +22,16 @@ import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.OriginalType;
-import org.apache.parquet.schema.PrimitiveType;
+import org.apache.arrow.vector.ipc.ArrowFileWriter;
 
-import java.io.IOException;
-import java.net.URI;
 import java.util.List;
-
-import static org.apache.arrow.vector.types.FloatingPointPrecision.*;
-import static org.apache.parquet.schema.OriginalType.*;
-import static org.apache.parquet.schema.PrimitiveType.*;
-import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.*;
 
 /**
  * Created by atr on 19.12.17.
  */
 public class ParquetToArrow {
     private Configuration conf;
-
-    private Path parqutFilePath;
     private MessageType parquetSchema;
     private ParquetFileReader parquetFileReader;
     private ParquetMetadata parquetFooter;
@@ -62,20 +49,20 @@ public class ParquetToArrow {
     }
 
     public void setParquetInputFile(String parquetFile) throws Exception {
-        this.parqutFilePath = new Path(parquetFile);
+        Path parqutFilePath = new Path(parquetFile);
         this.parquetFooter = ParquetFileReader.readFooter(conf,
-                this.parqutFilePath,
+                parqutFilePath,
                 ParquetMetadataConverter.NO_FILTER);
 
         FileMetaData mdata = this.parquetFooter.getFileMetaData();
         this.parquetSchema = mdata.getSchema();
         this.parquetFileReader = new ParquetFileReader(conf,
                 mdata,
-                this.parqutFilePath,
+                parqutFilePath,
                 this.parquetFooter.getBlocks(),
                 this.parquetSchema.getColumns());
         makeArrowSchema();
-        setArrowFileWriter(convertParquetToArrowFileName(this.parqutFilePath));
+        setArrowFileWriter(convertParquetToArrowFileName(parqutFilePath));
     }
 
     private String convertParquetToArrowFileName(Path parquetNamePath){
@@ -98,16 +85,20 @@ public class ParquetToArrow {
                 sb.append(px);
             switch (col.getType()) {
                 case INT32 :
-                    childrenBuilder.add(new Field(sb.toString(), FieldType.nullable(new ArrowType.Int(32, true)), null));
+                    childrenBuilder.add(new Field(sb.toString(),
+                            FieldType.nullable(new ArrowType.Int(32, true)), null));
                     break;
                 case INT64 :
-                    childrenBuilder.add(new Field(sb.toString(), FieldType.nullable(new ArrowType.Int(64, true)), null));
+                    childrenBuilder.add(new Field(sb.toString(),
+                            FieldType.nullable(new ArrowType.Int(64, true)), null));
                     break;
                 case DOUBLE :
-                    childrenBuilder.add(new Field(sb.toString(), FieldType.nullable(new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE)), null));
+                    childrenBuilder.add(new Field(sb.toString(),
+                            FieldType.nullable(new ArrowType.FloatingPoint(FloatingPointPrecision.DOUBLE)), null));
                     break;
                 case BINARY :
-                    childrenBuilder.add(new Field(sb.toString(), FieldType.nullable(new ArrowType.Binary()), null));
+                    childrenBuilder.add(new Field(sb.toString(),
+                            FieldType.nullable(new ArrowType.Binary()), null));
                     break;
                 // has float
                 //case FLOAT:
@@ -174,8 +165,7 @@ public class ParquetToArrow {
         if(rows > Integer.MAX_VALUE)
             throw new Exception(" More than Integer.MAX_VALUE is not supported " + rows);
 
-        NullableIntVector intVector = (NullableIntVector) fieldVector;
-        NullableIntVector.Mutator mutator = intVector.getMutator();
+        IntVector intVector = (IntVector) fieldVector;
         intVector.setInitialCapacity((int) rows);
         intVector.allocateNew();
 
@@ -183,15 +173,15 @@ public class ParquetToArrow {
             if(creader.getCurrentDefinitionLevel() == dmax){
                 int x = creader.getInteger();
                 // do something with x
-                mutator.setIndexDefined(i);
+                intVector.setIndexDefined(i);
                 // there is setSafe too - what does that mean? TODO:
-                mutator.set(i, 1, x);
+                intVector.setSafe(i, 1, x);
             } else {
-                mutator.setNull(i);
+                intVector.setNull(i);
             }
             creader.consume();
         }
-        mutator.setValueCount((int) rows);
+        intVector.setValueCount((int) rows);
         return rows;
     }
 
@@ -204,8 +194,7 @@ public class ParquetToArrow {
         if(rows > Integer.MAX_VALUE)
             throw new Exception(" More than Integer.MAX_VALUE is not supported " + rows);
 
-        NullableBigIntVector bigIntVector = (NullableBigIntVector) fieldVector;
-        NullableBigIntVector.Mutator mutator = bigIntVector.getMutator();
+        BigIntVector bigIntVector = (BigIntVector) fieldVector;
         bigIntVector.setInitialCapacity((int) rows);
         bigIntVector.allocateNew();
 
@@ -213,15 +202,15 @@ public class ParquetToArrow {
             if(creader.getCurrentDefinitionLevel() == dmax){
                 long x = creader.getLong();
                 // do something with x
-                mutator.setIndexDefined(i);
+                bigIntVector.setIndexDefined(i);
                 // there is setSafe too - what does that mean? TODO:
-                mutator.set(i, 1, x);
+                bigIntVector.setSafe(i, 1, x);
             } else {
-                mutator.setNull(i);
+                bigIntVector.setNull(i);
             }
             creader.consume();
         }
-        mutator.setValueCount((int) rows);
+        bigIntVector.setValueCount((int) rows);
         return rows;
     }
 
@@ -234,8 +223,7 @@ public class ParquetToArrow {
         if(rows > Integer.MAX_VALUE)
             throw new Exception(" More than Integer.MAX_VALUE is not supported " + rows);
 
-        NullableFloat8Vector float8Vector  = (NullableFloat8Vector ) fieldVector;
-        NullableFloat8Vector.Mutator mutator = float8Vector.getMutator();
+        Float8Vector float8Vector  = (Float8Vector ) fieldVector;
         float8Vector.setInitialCapacity((int) rows);
         float8Vector.allocateNew();
 
@@ -243,15 +231,15 @@ public class ParquetToArrow {
             if(creader.getCurrentDefinitionLevel() == dmax){
                 double x = creader.getDouble();
                 // do something with x
-                mutator.setIndexDefined(i);
+                float8Vector.setIndexDefined(i);
                 // there is setSafe too - what does that mean? TODO:
-                mutator.set(i, 1, x);
+                float8Vector.setSafe(i, 1, x);
             } else {
-                mutator.setNull(i);
+                float8Vector.setNull(i);
             }
             creader.consume();
         }
-        mutator.setValueCount((int) rows);
+        float8Vector.setValueCount((int) rows);
         return rows;
     }
 
@@ -264,23 +252,22 @@ public class ParquetToArrow {
         if(rows > Integer.MAX_VALUE)
             throw new Exception(" More than Integer.MAX_VALUE is not supported " + rows);
 
-        NullableVarBinaryVector varBinaryVector  = (NullableVarBinaryVector) fieldVector;
-        NullableVarBinaryVector.Mutator mutator = varBinaryVector.getMutator();
+        VarBinaryVector varBinaryVector  = (VarBinaryVector) fieldVector;
         varBinaryVector.setInitialCapacity((int) rows);
         varBinaryVector.allocateNew();
         for(int i = 0; i < (int) rows; i++) {
             if(creader.getCurrentDefinitionLevel() == dmax){
                 byte[] data = creader.getBinary().getBytes();
                 // do something with x
-                mutator.setIndexDefined(i);
-                mutator.setValueLengthSafe(i, data.length);
-                mutator.set(i, data);
+                varBinaryVector.setIndexDefined(i);
+                varBinaryVector.setValueLengthSafe(i, data.length);
+                varBinaryVector.setSafe(i, data);
             } else {
-                mutator.setNull(i);
+                varBinaryVector.setNull(i);
             }
             creader.consume();
         }
-        mutator.setValueCount((int) rows);
+        varBinaryVector.setValueCount((int) rows);
         return rows;
     }
 }
