@@ -18,8 +18,10 @@ public class ArrowOutputStream implements WritableByteChannel {
     public ArrowOutputStream(FSDataOutputStream outStream){
         this.outStream = outStream;
         this.isOpen = true;
-        this.tempBuffer = new byte[1024*1024]; // 1MB buffering
+        // 1MB buffering
+        this.tempBuffer = new byte[1024*1024];
     }
+
     private int writeDirectBuffer(ByteBuffer src) throws IOException {
         int remaining = src.remaining();
         int soFar = 0;
@@ -37,13 +39,13 @@ public class ArrowOutputStream implements WritableByteChannel {
     private int writeHeapBuffer(ByteBuffer src) throws IOException {
         int remaining = src.remaining();
         // get the heap buffer directly and copy
-        this.outStream.write(src.array());
+        this.outStream.write(src.array(), src.position(), remaining);
         src.position(src.position() + remaining);
         return remaining;
     }
 
     @Override
-    public int write(ByteBuffer src) throws IOException {
+    final public int write(ByteBuffer src) throws IOException {
         if(src.isDirect()){
             return writeDirectBuffer(src);
         } else {
@@ -52,12 +54,16 @@ public class ArrowOutputStream implements WritableByteChannel {
     }
 
     @Override
-    public boolean isOpen() {
+    final public boolean isOpen() {
         return this.isOpen;
     }
 
     @Override
-    public void close() throws IOException {
+    final public void close() throws IOException {
+        // flushes the client buffer
+        this.outStream.hflush();
+        // to the disk
+        this.outStream.hsync();
         this.outStream.close();
         this.isOpen = false;
     }
