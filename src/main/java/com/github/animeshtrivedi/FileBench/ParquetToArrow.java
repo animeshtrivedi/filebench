@@ -108,7 +108,7 @@ public class ParquetToArrow {
             }
         }
         this.arrowSchema = new Schema(childrenBuilder.build(), null);
-        System.out.println("Arrow Schema is " + this.arrowSchema.toString());
+        //System.out.println("Arrow Schema is " + this.arrowSchema.toString());
     }
 
     private void setArrowFileWriter(String arrowFileName) throws Exception{
@@ -150,29 +150,35 @@ public class ParquetToArrow {
                     this.parquetSchema, this.parquetFooter.getFileMetaData().getCreatedBy());
             if(pageReadStore.getRowCount() > Integer.MAX_VALUE)
                 throw new Exception(" More than Integer.MAX_VALUE is not supported " + pageReadStore.getRowCount());
+            int rows = (int) pageReadStore.getRowCount();
+
             int i = 0;
             while (i < size){
                 ColumnDescriptor col = colDesc.get(i);
                 switch(col.getType()) {
 
                     case INT32: writeIntColumn(colReader.getColumnReader(col),
-                            col.getMaxRepetitionLevel(),
-                            fieldVectors.get(i));
+                            col.getMaxDefinitionLevel(),
+                            fieldVectors.get(i),
+                            rows);
                     break;
 
                     case INT64: writeLongColumn(colReader.getColumnReader(col),
-                            col.getMaxRepetitionLevel(),
-                            fieldVectors.get(i));
+                            col.getMaxDefinitionLevel(),
+                            fieldVectors.get(i),
+                            rows);
                     break;
 
                     case DOUBLE: writeDoubleColumn(colReader.getColumnReader(col),
-                            col.getMaxRepetitionLevel(),
-                            fieldVectors.get(i));
+                            col.getMaxDefinitionLevel(),
+                            fieldVectors.get(i),
+                            rows);
                     break;
 
                     case BINARY: writeBinaryColumn(colReader.getColumnReader(col),
-                            col.getMaxRepetitionLevel(),
-                            fieldVectors.get(i));
+                            col.getMaxDefinitionLevel(),
+                            fieldVectors.get(i),
+                            rows);
                     break;
 
                     default : throw new Exception(" NYI " + col.getType());
@@ -186,33 +192,29 @@ public class ParquetToArrow {
         this.arrowFileWriter.close();
     }
 
-    private void writeIntColumn(ColumnReader creader, int dmax, FieldVector fieldVector) throws Exception {
-        int rows = (int) creader.getTotalValueCount();
+    private void writeIntColumn(ColumnReader creader, int dmax, FieldVector fieldVector, int rows) throws Exception {
         IntVector intVector = (IntVector) fieldVector;
         intVector.setInitialCapacity(rows);
         intVector.allocateNew();
 
         for(int i = 0; i < rows; i++) {
             if(creader.getCurrentDefinitionLevel() == dmax){
-                intVector.setIndexDefined(i);
                 intVector.setSafe(i, 1, creader.getInteger());
             } else {
                 intVector.setNull(i);
             }
             creader.consume();
         }
-        intVector.setValueCount((int) rows);
+        intVector.setValueCount(rows);
     }
 
-    private void writeLongColumn(ColumnReader creader, int dmax, FieldVector fieldVector) throws Exception {
-        int rows = (int) creader.getTotalValueCount();
+    private void writeLongColumn(ColumnReader creader, int dmax, FieldVector fieldVector, int rows) throws Exception {
         BigIntVector bigIntVector = (BigIntVector) fieldVector;
         bigIntVector.setInitialCapacity(rows);
         bigIntVector.allocateNew();
 
         for(int i = 0; i < rows; i++) {
             if(creader.getCurrentDefinitionLevel() == dmax){
-                bigIntVector.setIndexDefined(i);
                 bigIntVector.setSafe(i, 1, creader.getLong());
             } else {
                 bigIntVector.setNull(i);
@@ -222,15 +224,13 @@ public class ParquetToArrow {
         bigIntVector.setValueCount(rows);
     }
 
-    private void writeDoubleColumn(ColumnReader creader, int dmax, FieldVector fieldVector) throws Exception {
-        int rows = (int) creader.getTotalValueCount();
+    private void writeDoubleColumn(ColumnReader creader, int dmax, FieldVector fieldVector, int rows) throws Exception {
         Float8Vector float8Vector  = (Float8Vector ) fieldVector;
         float8Vector.setInitialCapacity((int) rows);
         float8Vector.allocateNew();
 
         for(int i = 0; i < rows; i++) {
             if(creader.getCurrentDefinitionLevel() == dmax){
-                float8Vector.setIndexDefined(i);
                 float8Vector.setSafe(i, 1, creader.getDouble());
             } else {
                 float8Vector.setNull(i);
@@ -240,8 +240,7 @@ public class ParquetToArrow {
         float8Vector.setValueCount(rows);
     }
 
-    private void writeBinaryColumn(ColumnReader creader, int dmax, FieldVector fieldVector) throws Exception {
-        int rows = (int) creader.getTotalValueCount();
+    private void writeBinaryColumn(ColumnReader creader, int dmax, FieldVector fieldVector, int rows) throws Exception {
         VarBinaryVector varBinaryVector  = (VarBinaryVector) fieldVector;
         varBinaryVector.setInitialCapacity((int) rows);
         varBinaryVector.allocateNew();
@@ -257,6 +256,6 @@ public class ParquetToArrow {
             }
             creader.consume();
         }
-        varBinaryVector.setValueCount((int) rows);
+        varBinaryVector.setValueCount(rows);
     }
 }

@@ -45,9 +45,12 @@ class ArrowReadTest extends AbstractTest {
       if (!arrowFileReader.loadRecordBatch(rbBlock)) {
         throw new IOException("Expected to read record batch")
       }
+      println("[BUG] number of rows here are : " + root.getRowCount) // this returns zero
       /* read all the fields */
       var j = 0
       var numCols = fieldVector.size()
+      //FIXME: once root.getRowCount works we can replace this logic with that
+      var mixedRows = 0L
       while (j < numCols){
         val fx = fieldVector.get(j)
         fx.getMinorType match {
@@ -59,8 +62,10 @@ class ArrowReadTest extends AbstractTest {
           case _ => throw new Exception(fx.getMinorType + " is not implemented yet")
         }
         j+=1
+        mixedRows+=fx.getValueCount
       }
       i+=1
+      this.totalRows+=(mixedRows/numCols)
     }
     val s3 = System.nanoTime()
     this.runTimeInNanoSecs = s3 - s2
