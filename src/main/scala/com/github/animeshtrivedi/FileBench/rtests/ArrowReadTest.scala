@@ -42,7 +42,6 @@ class ArrowReadTest extends AbstractTest {
     val size = arrowBlocks.size()
     while(i < size){
       val rbBlock = arrowBlocks.get(i)
-      println(" ----> " + rbBlock)
       if (!arrowFileReader.loadRecordBatch(rbBlock)) {
         throw new IOException("Expected to read record batch")
       }

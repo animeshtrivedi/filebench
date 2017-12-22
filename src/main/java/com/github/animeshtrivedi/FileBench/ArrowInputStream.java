@@ -25,7 +25,6 @@ public class ArrowInputStream implements SeekableByteChannel {
 
     @Override
     final public int read(ByteBuffer dst) throws IOException {
-        System.out.println("XXX: read " + dst.remaining() + " bytes");
         return this.instream.read(dst);
     }
 
@@ -36,7 +35,6 @@ public class ArrowInputStream implements SeekableByteChannel {
 
     @Override
     final public long position() throws IOException {
-        System.out.println("XXX: position get, at " + this.instream.getPos());
         return this.instream.getPos();
     }
 
@@ -47,20 +45,17 @@ public class ArrowInputStream implements SeekableByteChannel {
                     " asked seek location " + newPosition +
                     " fileCapacity " + this.fileSize);
         }
-        System.out.println("XXX: position set, at " + newPosition);
         this.instream.seek(newPosition);
         return this;
     }
 
     @Override
     final public long size() throws IOException {
-        System.out.println("XXX: get size, at " + this.truncatedSize);
         return this.truncatedSize;
     }
 
     @Override
     final public SeekableByteChannel truncate(long size) throws IOException {
-        System.out.println("XXX: set size, at " + size);
         this.truncatedSize = size;
         return null;
     }
