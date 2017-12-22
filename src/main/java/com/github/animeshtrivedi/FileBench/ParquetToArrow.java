@@ -151,6 +151,8 @@ public class ParquetToArrow {
             if(pageReadStore.getRowCount() > Integer.MAX_VALUE)
                 throw new Exception(" More than Integer.MAX_VALUE is not supported " + pageReadStore.getRowCount());
             int rows = (int) pageReadStore.getRowCount();
+            // this batch of Arrow contains these many records
+            this.arrowVectorSchemaRoot.setRowCount(rows);
 
             int i = 0;
             while (i < size){
