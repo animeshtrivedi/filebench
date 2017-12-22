@@ -25,6 +25,8 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.apache.arrow.vector.ipc.ArrowFileWriter;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.List;
 
 /**
@@ -120,9 +122,19 @@ public class ParquetToArrow {
         this.arrowVectorSchemaRoot = VectorSchemaRoot.create(this.arrowSchema, this.ra);
         DictionaryProvider.MapDictionaryProvider provider = new DictionaryProvider.MapDictionaryProvider();
 
-        this.arrowFileWriter = new ArrowFileWriter(this.arrowVectorSchemaRoot,
-                provider,
-                new ArrowOutputStream(file));
+        boolean writeLocalFile = false;
+        if(writeLocalFile) {
+            File arrowFile = new File("./" + arrowFileName);
+            FileOutputStream fileOutputStream = new FileOutputStream(arrowFile);
+            this.arrowFileWriter = new ArrowFileWriter(this.arrowVectorSchemaRoot,
+                    provider,
+                    fileOutputStream.getChannel());
+        } else {
+            /* use HDFS files */
+            this.arrowFileWriter = new ArrowFileWriter(this.arrowVectorSchemaRoot,
+                    provider,
+                    new ArrowOutputStream(file));
+        }
     }
 
     public void process() throws Exception {
@@ -132,19 +144,37 @@ public class ParquetToArrow {
         int size = colDesc.size();
         DumpGroupConverter conv = new DumpGroupConverter();
         this.arrowFileWriter.start();
-
         pageReadStore = parquetFileReader.readNextRowGroup();
         while (pageReadStore != null) {
             ColumnReadStoreImpl colReader = new ColumnReadStoreImpl(pageReadStore, conv,
                     this.parquetSchema, this.parquetFooter.getFileMetaData().getCreatedBy());
+            if(pageReadStore.getRowCount() > Integer.MAX_VALUE)
+                throw new Exception(" More than Integer.MAX_VALUE is not supported " + pageReadStore.getRowCount());
             int i = 0;
             while (i < size){
                 ColumnDescriptor col = colDesc.get(i);
                 switch(col.getType()) {
-                    case INT32: writeIntColumn(colReader, col, fieldVectors.get(i)); break;
-                    case INT64: writeLongColumn(colReader, col, fieldVectors.get(i)); break;
-                    case DOUBLE: writeDoubleColumn(colReader, col, fieldVectors.get(i)); break;
-                    case BINARY: writeBinaryColumn(colReader, col, fieldVectors.get(i)); break;
+
+                    case INT32: writeIntColumn(colReader.getColumnReader(col),
+                            col.getMaxRepetitionLevel(),
+                            fieldVectors.get(i));
+                    break;
+
+                    case INT64: writeLongColumn(colReader.getColumnReader(col),
+                            col.getMaxRepetitionLevel(),
+                            fieldVectors.get(i));
+                    break;
+
+                    case DOUBLE: writeDoubleColumn(colReader.getColumnReader(col),
+                            col.getMaxRepetitionLevel(),
+                            fieldVectors.get(i));
+                    break;
+
+                    case BINARY: writeBinaryColumn(colReader.getColumnReader(col),
+                            col.getMaxRepetitionLevel(),
+                            fieldVectors.get(i));
+                    break;
+
                     default : throw new Exception(" NYI " + col.getType());
                 }
                 i+=1;
@@ -156,109 +186,69 @@ public class ParquetToArrow {
         this.arrowFileWriter.close();
     }
 
-    private long writeIntColumn(ColumnReadStoreImpl crstore,
-                                org.apache.parquet.column.ColumnDescriptor column,
-                                FieldVector fieldVector) throws Exception {
-        int dmax = column.getMaxDefinitionLevel();
-        ColumnReader creader = crstore.getColumnReader(column);
-        long rows = creader.getTotalValueCount();
-        if(rows > Integer.MAX_VALUE)
-            throw new Exception(" More than Integer.MAX_VALUE is not supported " + rows);
-
+    private void writeIntColumn(ColumnReader creader, int dmax, FieldVector fieldVector) throws Exception {
+        int rows = (int) creader.getTotalValueCount();
         IntVector intVector = (IntVector) fieldVector;
-        intVector.setInitialCapacity((int) rows);
+        intVector.setInitialCapacity(rows);
         intVector.allocateNew();
 
-        for(int i = 0; i < (int) rows; i++) {
+        for(int i = 0; i < rows; i++) {
             if(creader.getCurrentDefinitionLevel() == dmax){
-                int x = creader.getInteger();
-                // do something with x
                 intVector.setIndexDefined(i);
-                // there is setSafe too - what does that mean? TODO:
-                intVector.setSafe(i, 1, x);
+                intVector.setSafe(i, 1, creader.getInteger());
             } else {
                 intVector.setNull(i);
             }
             creader.consume();
         }
         intVector.setValueCount((int) rows);
-        return rows;
     }
 
-    private long writeLongColumn(ColumnReadStoreImpl crstore,
-                                org.apache.parquet.column.ColumnDescriptor column,
-                                FieldVector fieldVector) throws Exception {
-        int dmax = column.getMaxDefinitionLevel();
-        ColumnReader creader = crstore.getColumnReader(column);
-        long rows = creader.getTotalValueCount();
-        if(rows > Integer.MAX_VALUE)
-            throw new Exception(" More than Integer.MAX_VALUE is not supported " + rows);
-
+    private void writeLongColumn(ColumnReader creader, int dmax, FieldVector fieldVector) throws Exception {
+        int rows = (int) creader.getTotalValueCount();
         BigIntVector bigIntVector = (BigIntVector) fieldVector;
-        bigIntVector.setInitialCapacity((int) rows);
+        bigIntVector.setInitialCapacity(rows);
         bigIntVector.allocateNew();
 
-        for(int i = 0; i < (int) rows; i++) {
+        for(int i = 0; i < rows; i++) {
             if(creader.getCurrentDefinitionLevel() == dmax){
-                long x = creader.getLong();
-                // do something with x
                 bigIntVector.setIndexDefined(i);
-                // there is setSafe too - what does that mean? TODO:
-                bigIntVector.setSafe(i, 1, x);
+                bigIntVector.setSafe(i, 1, creader.getLong());
             } else {
                 bigIntVector.setNull(i);
             }
             creader.consume();
         }
-        bigIntVector.setValueCount((int) rows);
-        return rows;
+        bigIntVector.setValueCount(rows);
     }
 
-    private long writeDoubleColumn(ColumnReadStoreImpl crstore,
-                                 org.apache.parquet.column.ColumnDescriptor column,
-                                 FieldVector fieldVector) throws Exception {
-        int dmax = column.getMaxDefinitionLevel();
-        ColumnReader creader = crstore.getColumnReader(column);
-        long rows = creader.getTotalValueCount();
-        if(rows > Integer.MAX_VALUE)
-            throw new Exception(" More than Integer.MAX_VALUE is not supported " + rows);
-
+    private void writeDoubleColumn(ColumnReader creader, int dmax, FieldVector fieldVector) throws Exception {
+        int rows = (int) creader.getTotalValueCount();
         Float8Vector float8Vector  = (Float8Vector ) fieldVector;
         float8Vector.setInitialCapacity((int) rows);
         float8Vector.allocateNew();
 
-        for(int i = 0; i < (int) rows; i++) {
+        for(int i = 0; i < rows; i++) {
             if(creader.getCurrentDefinitionLevel() == dmax){
-                double x = creader.getDouble();
-                // do something with x
                 float8Vector.setIndexDefined(i);
-                // there is setSafe too - what does that mean? TODO:
-                float8Vector.setSafe(i, 1, x);
+                float8Vector.setSafe(i, 1, creader.getDouble());
             } else {
                 float8Vector.setNull(i);
             }
             creader.consume();
         }
-        float8Vector.setValueCount((int) rows);
-        return rows;
+        float8Vector.setValueCount(rows);
     }
 
-    private long writeBinaryColumn(ColumnReadStoreImpl crstore,
-                                   org.apache.parquet.column.ColumnDescriptor column,
-                                   FieldVector fieldVector) throws Exception {
-        int dmax = column.getMaxDefinitionLevel();
-        ColumnReader creader = crstore.getColumnReader(column);
-        long rows = creader.getTotalValueCount();
-        if(rows > Integer.MAX_VALUE)
-            throw new Exception(" More than Integer.MAX_VALUE is not supported " + rows);
-
+    private void writeBinaryColumn(ColumnReader creader, int dmax, FieldVector fieldVector) throws Exception {
+        int rows = (int) creader.getTotalValueCount();
         VarBinaryVector varBinaryVector  = (VarBinaryVector) fieldVector;
         varBinaryVector.setInitialCapacity((int) rows);
         varBinaryVector.allocateNew();
-        for(int i = 0; i < (int) rows; i++) {
+
+        for(int i = 0; i < rows; i++) {
             if(creader.getCurrentDefinitionLevel() == dmax){
                 byte[] data = creader.getBinary().getBytes();
-                // do something with x
                 varBinaryVector.setIndexDefined(i);
                 varBinaryVector.setValueLengthSafe(i, data.length);
                 varBinaryVector.setSafe(i, data);
@@ -268,6 +258,5 @@ public class ParquetToArrow {
             creader.consume();
         }
         varBinaryVector.setValueCount((int) rows);
-        return rows;
     }
 }
