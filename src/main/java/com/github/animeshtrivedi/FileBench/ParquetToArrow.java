@@ -133,7 +133,7 @@ public class ParquetToArrow {
             /* use HDFS files */
             this.arrowFileWriter = new ArrowFileWriter(this.arrowVectorSchemaRoot,
                     provider,
-                    new ArrowOutputStream(file));
+                    new HDFSWritableByteChannel(file));
         }
     }
 

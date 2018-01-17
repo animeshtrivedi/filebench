@@ -9,13 +9,13 @@ import java.nio.channels.WritableByteChannel;
 /**
  * Created by atr on 19.12.17.
  */
-public class ArrowOutputStream implements WritableByteChannel {
+public class HDFSWritableByteChannel implements WritableByteChannel {
 
     private FSDataOutputStream outStream;
     private Boolean isOpen;
     private byte[] tempBuffer;
 
-    public ArrowOutputStream(FSDataOutputStream outStream){
+    public HDFSWritableByteChannel(FSDataOutputStream outStream){
         this.outStream = outStream;
         this.isOpen = true;
         // 1MB buffering

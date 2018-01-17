@@ -2,7 +2,7 @@ package com.github.animeshtrivedi.FileBench.rtests
 
 import java.io.IOException
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, ArrowInputStream, TestObjectFactory}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, HdfsSeekableByteChannel, TestObjectFactory}
 import org.apache.arrow.memory.RootAllocator
 import org.apache.arrow.vector._
 import org.apache.arrow.vector.ipc.message.ArrowBlock
@@ -25,7 +25,7 @@ class ArrowReadTest extends AbstractTest {
     val path = new Path(fileName)
     val fileSystem = path.getFileSystem(conf)
     val instream = fileSystem.open(path)
-    val arrowInputStream = new ArrowInputStream(instream, expectedBytes)
+    val arrowInputStream = new HdfsSeekableByteChannel(instream, expectedBytes)
 
     this.arrowFileReader = new ArrowFileReader(new SeekableReadChannel(arrowInputStream),
       new RootAllocator(Integer.MAX_VALUE))

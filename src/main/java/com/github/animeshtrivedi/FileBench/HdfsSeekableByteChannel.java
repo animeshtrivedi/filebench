@@ -9,14 +9,14 @@ import java.nio.channels.SeekableByteChannel;
 /**
  * Created by atr on 20.12.17.
  */
-public class ArrowInputStream implements SeekableByteChannel {
+public class HdfsSeekableByteChannel implements SeekableByteChannel {
 
     private FSDataInputStream instream;
     private long fileSize;
     private long truncatedSize;
     private boolean isOpen;
 
-    public ArrowInputStream(FSDataInputStream instream, long fileSize){
+    public HdfsSeekableByteChannel(FSDataInputStream instream, long fileSize){
         this.instream = instream;
         this.fileSize = fileSize;
         this.truncatedSize = fileSize;
