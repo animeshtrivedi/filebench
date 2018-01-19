@@ -18,7 +18,7 @@ abstract class AbstractTest extends Runnable with Serializable {
   protected var _validBinarySize:Long = 0L
 
   protected var runTimeInNanoSecs = 0L
-  protected var readBytes = 0L
+  protected var bytesOnFS = 0L
   protected var totalRows = 0L
 
 
@@ -54,7 +54,7 @@ abstract class AbstractTest extends Runnable with Serializable {
     this._validDouble
   }
 
-  final def getResults:TestResult = TestResult(this.totalRows, this.readBytes, this.runTimeInNanoSecs)
+  final def getResults:TestResult = TestResult(this.totalRows, this.bytesOnFS, this.runTimeInNanoSecs)
 
   def init(fileName:String, expectedBytes:Long)
 }

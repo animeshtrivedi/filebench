@@ -18,7 +18,7 @@ class HdfsReadTest extends AbstractTest {
     val path = new Path(fileName)
     val fileSystem = path.getFileSystem(conf)
     this.instream = fileSystem.open(path)
-    this.readBytes = expectedBytes
+    this.bytesOnFS = expectedBytes
   }
 
   final override def run(): Unit = runUnaligned()
@@ -32,7 +32,7 @@ class HdfsReadTest extends AbstractTest {
       rx = instream.read(byteArr)
     }
     this.runTimeInNanoSecs = System.nanoTime() - s1
-    require(this.readBytes == bytes)
+    require(this.bytesOnFS == bytes)
   }
 
   final def readFullByteArray(arr: Array[Byte], offset: Int, length: Int): Int = {
@@ -54,7 +54,7 @@ class HdfsReadTest extends AbstractTest {
 
   final def runUnaligned(): Unit = {
     val s1 = System.nanoTime()
-    var bytesLeft = this.readBytes
+    var bytesLeft = this.bytesOnFS
     while (bytesLeft > 0 ) {
       val toRead = Math.min(bytesLeft, byteArr.length.toLong).toInt
       readFullByteArray(byteArr, 0, toRead)

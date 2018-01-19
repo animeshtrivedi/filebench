@@ -17,7 +17,7 @@ class ORCReadTest extends  AbstractTest {
   private[this] var batch:VectorizedRowBatch = _
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
-    this.readBytes = expectedBytes
+    this.bytesOnFS = expectedBytes
 
     val conf: Configuration = new Configuration()
     val path = new Path(fileName)

@@ -17,7 +17,7 @@ class JsonReadTest extends AbstractTest {
     val path = new Path(fileName)
     val fileSystem = path.getFileSystem(conf)
     val instream = fileSystem.open(path)
-    this.readBytes = expectedBytes
+    this.bytesOnFS = expectedBytes
     this.jsonParser = new JsonFactory().createParser(instream)
   }
 

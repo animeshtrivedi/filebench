@@ -66,7 +66,7 @@ class AvroReadTest extends  AbstractTest {
   private var fileName:String = _
 
   override def init(fileName: String, expectedBytes: Long): Unit = {
-    this.readBytes = expectedBytes
+    this.bytesOnFS = expectedBytes
     this.fileName = fileName
     this.reader = {
       val conf = new Configuration()

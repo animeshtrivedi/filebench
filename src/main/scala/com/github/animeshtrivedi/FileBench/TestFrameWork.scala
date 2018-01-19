@@ -61,7 +61,7 @@ class TestFrameWork(val allocateTestObject: TestObjectFactory, val inputDir:Stri
   println("-------------------------------------------")
   runtTime.zipWithIndex.foreach( x => println("runtime["+x._2+"] : " + Utils.twoLongDivToDecimal(x._1, Utils.NANOSEC_TO_MILLISEC) + " msec"))
   println("-------------------------------------------")
-  println(" total bytes materialized " + totalBytesMaterizlied + " totalBytesFrom FS: " + totalBytesFromFS +
+  println(" total bytes materialized " + totalBytesMaterizlied + " totalBytesFrom FS (w/o filter): " + totalBytesFromFS +
     "  || rowSize on FS " + Utils.twoLongDivToDecimal(totalBytesFromFS, totalRows) + " bytes " +
     " rowSize on fly " + Utils.twoLongDivToDecimal(totalBytesMaterizlied, totalRows) + " bytes")
   println(" sum: " + totalSumMaterizlied + " valid ints: " + totalInts + " longs: " + totalLongs + " doubles: " + totalDoubles)
