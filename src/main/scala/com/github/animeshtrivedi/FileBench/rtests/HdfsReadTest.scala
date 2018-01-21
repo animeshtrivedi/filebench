@@ -1,6 +1,7 @@
 package com.github.animeshtrivedi.FileBench.rtests
 
 import java.io.EOFException
+import java.nio.ByteBuffer
 
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
@@ -11,7 +12,15 @@ import org.apache.hadoop.fs.{FSDataInputStream, Path}
   */
 class HdfsReadTest extends AbstractTest {
   private[this] var instream:FSDataInputStream = _
-  private[this] val byteArr = new Array[Byte](1048575) //(1024 * 1024)
+  private[this] val capacity = 1048575 //(1024 * 1024)
+  private[this] val byteArr = new Array[Byte](capacity)
+  private[this] val direct = true
+  private[this] val byteBuffer = {
+    if(direct)
+      ByteBuffer.allocateDirect(capacity)
+    else
+      ByteBuffer.allocate(capacity)
+  }
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     val conf = new Configuration()
@@ -21,7 +30,21 @@ class HdfsReadTest extends AbstractTest {
     this.bytesOnFS = expectedBytes
   }
 
-  final override def run(): Unit = runUnaligned()
+  final override def run(): Unit = runByteBufferDirect //runUnaligned()
+
+  final def runByteBufferDirect(): Unit = {
+    val s1 = System.nanoTime()
+    byteBuffer.clear()
+    var rx:Int = 0
+    var bytes:Long = 0
+    while (bytes < this.bytesOnFS) {
+      rx = instream.read(byteBuffer)
+      bytes+=rx
+      byteBuffer.clear()
+    }
+    this.runTimeInNanoSecs = System.nanoTime() - s1
+    require(this.bytesOnFS == bytes)
+  }
 
   final def runFastest(): Unit = {
     val s1 = System.nanoTime()
