@@ -202,7 +202,7 @@ class ParquetReadTest extends AbstractTest {
                                          column: org.apache.parquet.column.ColumnDescriptor,
                                          original:Option[OriginalType],
                                          index:Int): Long = {
-    require(original.isEmpty)
+    require(original.isEmpty || (original.get == OriginalType.UTF8))
     val dmax = column.getMaxDefinitionLevel
     val creader:ColumnReader = crstore.getColumnReader(column)
     val rows = creader.getTotalValueCount
