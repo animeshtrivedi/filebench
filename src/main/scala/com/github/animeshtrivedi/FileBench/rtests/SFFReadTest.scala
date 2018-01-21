@@ -84,7 +84,7 @@ class SFFReadTest extends  AbstractTest {
         }else {
           sb.append(" null ")
         }
-        case BinaryType => if (!row.isNullAt(i)) {
+        case BinaryType | StringType => if (!row.isNullAt(i)) {
           this._validBinary += 1
           val size = row.getColumnSizeinBytes(i)
           this._sum += size
@@ -117,7 +117,7 @@ class SFFReadTest extends  AbstractTest {
           this._validDouble += 1
           this._sum += row.getDouble(i).toLong
         }
-        case BinaryType => if (!row.isNullAt(i)) {
+        case BinaryType | StringType => if (!row.isNullAt(i)) {
           this._validBinary += 1
           val size = row.getColumnSizeinBytes(i)
           this._sum+=size
