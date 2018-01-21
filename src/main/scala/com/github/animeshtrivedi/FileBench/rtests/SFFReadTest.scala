@@ -60,7 +60,7 @@ class SFFReadTest extends  AbstractTest {
     var i = 0
     while (i < numCols){
       this.schemaArray(i) match {
-        case IntegerType => if(!row.isNullAt(i)) {
+        case IntegerType | DateType => if(!row.isNullAt(i)) {
           this._validInt += 1
           val x = row.getInt(i)
           this._sum += x
@@ -105,7 +105,7 @@ class SFFReadTest extends  AbstractTest {
     var i = 0
     while (i < numCols) {
       this.schemaArray(i) match {
-        case IntegerType => if (!row.isNullAt(i)) {
+        case IntegerType | DateType => if (!row.isNullAt(i)) {
           this._validInt += 1
           this._sum += row.getInt(i)
         }
