@@ -2,8 +2,7 @@ package com.github.animeshtrivedi.FileBench.rtests
 
 import java.util
 
-import com.github.animeshtrivedi.FileBench.helper.DumpGroupConverter
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, DumpGroupConverterX, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.column.ColumnReader
@@ -15,7 +14,6 @@ import org.apache.parquet.filter2.predicate.{FilterApi, FilterPredicate}
 import org.apache.parquet.format.converter.ParquetMetadataConverter
 import org.apache.parquet.hadoop.ParquetFileReader
 import org.apache.parquet.hadoop.metadata.{BlockMetaData, FileMetaData, ParquetMetadata}
-import org.apache.parquet.io.api.{GroupConverter, PrimitiveConverter}
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
 import org.apache.parquet.schema.{MessageType, OriginalType}
 
@@ -93,7 +91,7 @@ class ParquetReadTest extends AbstractTest {
     val colDesc = schema.getColumns
     val size = colDesc.size()
 
-    val conv = new DumpGroupConverter
+    val conv = new DumpGroupConverterX
     val s2 = System.nanoTime()
     try
     {

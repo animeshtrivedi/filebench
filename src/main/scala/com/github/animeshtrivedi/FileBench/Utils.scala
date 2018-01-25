@@ -3,7 +3,6 @@ package com.github.animeshtrivedi.FileBench
 import com.github.animeshtrivedi.FileBench.rtests._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
-import org.apache.spark.sql.simplefileformat.SimpleFileFormat
 
 /**
   * Created by atr on 14.11.17.
@@ -12,7 +11,7 @@ object Utils {
 
   def ok(path:Path):Boolean = {
     val fname = path.getName
-    fname(0) != '_' && fname(0) != '.' && !SimpleFileFormat.isStringPathMetaFile(path.getName)
+    fname(0) != '_' && fname(0) != '.'
   }
 
   def enumerateWithSize(fileName:String):List[(String, Long)] = {

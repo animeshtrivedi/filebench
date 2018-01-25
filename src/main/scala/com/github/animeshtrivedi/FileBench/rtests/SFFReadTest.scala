@@ -1,6 +1,7 @@
 package com.github.animeshtrivedi.FileBench.rtests
 
 import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
+import org.apache.spark.sql.simplefileformat.SimpleFileFormat
 import org.apache.spark.sql.simplefileformat.{SFFRowIterator, SimpleFileFormat}
 import org.apache.spark.sql.simplefileformat.priv.SFFROW
 import org.apache.spark.sql.types._
@@ -33,7 +34,7 @@ class SFFReadTest extends  AbstractTest {
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     this.bytesOnFS = expectedBytes
     this.itr = sff.buildRowIteratorX(fileName)
-    this.schema = this.itr.getSFFMetadata.getSchema
+    this.schema = sff.getSchemaFromDatafile(fileName)
     this.schemaArray = this.schema.fields.map(fx => fx.dataType)
     this.numCols = this.schema.fields.length
     //    this.fastReaders = new Array[SFFROW => Unit](this.schema.size)

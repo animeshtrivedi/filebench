@@ -1,10 +1,10 @@
 package com.github.animeshtrivedi.FileBench;
 
-import com.github.animeshtrivedi.FileBench.helper.DumpGroupConverter;
 import com.google.common.collect.ImmutableList;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.dictionary.DictionaryProvider;
+import org.apache.arrow.vector.ipc.ArrowFileWriter;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -23,7 +23,6 @@ import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
-import org.apache.arrow.vector.ipc.ArrowFileWriter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -142,7 +141,7 @@ public class ParquetToArrow {
         List<ColumnDescriptor> colDesc = parquetSchema.getColumns();
         List<FieldVector> fieldVectors = this.arrowVectorSchemaRoot.getFieldVectors();
         int size = colDesc.size();
-        DumpGroupConverter conv = new DumpGroupConverter();
+        DumpGroupConverterX conv = new DumpGroupConverterX();
         this.arrowFileWriter.start();
         pageReadStore = parquetFileReader.readNextRowGroup();
         while (pageReadStore != null) {
