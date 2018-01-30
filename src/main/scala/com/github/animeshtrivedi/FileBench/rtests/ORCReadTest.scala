@@ -4,7 +4,7 @@ import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.exec.vector._
-import org.apache.orc.{OrcFile, RecordReader, TypeDescription}
+import org.apache.orc.{OrcFile, Reader, RecordReader, TypeDescription}
 
 /**
   * Created by atr on 19.11.17.
@@ -15,6 +15,31 @@ class ORCReadTest extends  AbstractTest {
   private[this] var rows:RecordReader = _
   private[this] var schema:TypeDescription = _
   private[this] var batch:VectorizedRowBatch = _
+  private[this] var projection:Array[Boolean] = _
+
+  final private[this] def simpleReader(reader:Reader):RecordReader = {
+    // in this case, all is set to true
+    var i = 0
+    while ( i < projection.length){
+      projection(i) = true
+      i+=1
+    }
+    reader.rows()
+  }
+
+  final private[this] def projectedReader(reader:Reader):RecordReader = {
+    //https://www.slideshare.net/Hadoop_Summit/ingesting-data-at-blazing-speed-using-apache-orc
+    var i = 0
+    while ( i < projection.length){
+      projection(i) = false
+      i+=4
+    }
+    projection(0) = true // first is always true
+    projection(10) = true // the long
+    val ro = new Reader.Options()
+    ro.include(projection)
+    reader.rows(ro)
+  }
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     this.bytesOnFS = expectedBytes
@@ -23,8 +48,9 @@ class ORCReadTest extends  AbstractTest {
     val path = new Path(fileName)
     val reader = OrcFile.createReader(path,
       OrcFile.readerOptions(conf))
-    this.rows = reader.rows()
     this.schema = reader.getSchema
+    this.projection = new Array[Boolean](schema.getMaximumId + 1)
+    this.rows = if(true) simpleReader(reader) else projectedReader(reader)
     this.batch = this.schema.createRowBatch()
   }
 
@@ -108,14 +134,16 @@ class ORCReadTest extends  AbstractTest {
       /* loop over all the columns */
       var i = 0
       while (i < all.size()) {
-        all.get(i).getCategory match {
-          case TypeDescription.Category.LONG => consumeLongColumn(batch, i)
-          case TypeDescription.Category.INT => consumeIntColumn(batch, i)
-          case TypeDescription.Category.DOUBLE =>  consumeDoubleColumn(batch, i)
-          case TypeDescription.Category.BINARY =>  consumeBinaryColumn(batch, i)
-          case _  => {
-            println(all.get(i) + " does not match anything?, please add the use case" + all.get(i).getCategory )
-            throw new Exception()
+        if(this.projection(i + 1)) { // only process projected columns
+          all.get(i).getCategory match {
+            case TypeDescription.Category.LONG => consumeLongColumn(batch, i)
+            case TypeDescription.Category.INT => consumeIntColumn(batch, i)
+            case TypeDescription.Category.DOUBLE => consumeDoubleColumn(batch, i)
+            case TypeDescription.Category.BINARY => consumeBinaryColumn(batch, i)
+            case _ => {
+              println(all.get(i) + " does not match anything?, please add the use case" + all.get(i).getCategory)
+              throw new Exception()
+            }
           }
         }
         i+=1
