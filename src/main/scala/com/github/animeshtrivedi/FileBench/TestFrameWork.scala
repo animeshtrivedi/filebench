@@ -18,21 +18,28 @@ class TestFrameWork(val allocateTestObject: TestObjectFactory, val inputDir:Stri
   private[this] val threadArr = new Array[Thread](parallel)
   private[this] val testArr = new Array[AbstractTest](parallel)
 
-  for (i <- 0 until parallel) {
+  private[this] var i = 0
+  while (i < parallel) {
     testArr(i) = allocateTestObject.allocate()
     threadArr(i) = new Thread(testArr(i))
+    i+=1
   }
+
   filesToTest.zip(testArr).foreach( fx => {
     fx._2.init(fx._1._1, fx._1._2)
   })
 
   /////////////////////////////////////////
   private val start = System.nanoTime()
-  for (i <- 0 until parallel) {
+  i = 0
+  while (i < parallel) {
     threadArr(i).start()
+    i+=1
   }
-  for (i <- 0 until parallel) {
+  i = 0
+  while (i < parallel) {
     threadArr(i).join()
+    i+=1
   }
   private val end = System.nanoTime()
   /////////////////////////////////////////
