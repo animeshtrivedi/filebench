@@ -4,6 +4,8 @@ import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.exec.vector._
+import org.apache.hadoop.hive.ql.io.sarg.SearchArgument.Builder
+import org.apache.hadoop.hive.ql.io.sarg.{PredicateLeaf, SearchArgument, SearchArgumentFactory}
 import org.apache.orc.{OrcFile, Reader, RecordReader, TypeDescription}
 
 /**
@@ -16,29 +18,40 @@ class ORCReadTest extends  AbstractTest {
   private[this] var schema:TypeDescription = _
   private[this] var batch:VectorizedRowBatch = _
   private[this] var projection:Array[Boolean] = _
+  private[this] val ro = new Reader.Options()
 
-  final private[this] def simpleReader(reader:Reader):RecordReader = {
+  final private[this] def configSimpleReader():Unit = {
     // in this case, all is set to true
     var i = 0
     while ( i < projection.length){
       projection(i) = true
       i+=1
     }
-    reader.rows()
   }
 
-  final private[this] def projectedReader(reader:Reader):RecordReader = {
+  final private[this] def configProjectedReader():Unit = {
     //https://www.slideshare.net/Hadoop_Summit/ingesting-data-at-blazing-speed-using-apache-orc
     var i = 0
     while ( i < projection.length){
       projection(i) = false
       i+=4
     }
-    projection(0) = true // first is always true
-    projection(10) = true // the long
-    val ro = new Reader.Options()
-    ro.include(projection)
-    reader.rows(ro)
+    this.projection(0) = true // first is always true
+    this.projection(10) = true // the long index
+    this.ro.include(projection)
+  }
+
+  final private[this] def configWithFilters():Unit = {
+    //https://www.slideshare.net/Hadoop_Summit/ingesting-data-at-blazing-speed-using-apache-orc
+    val builder:Builder = SearchArgumentFactory.newBuilder()
+    // all fail
+    //val filter = builder.lessThan("ss_sold_date_sk", PredicateLeaf.Type.LONG, 0L).build()
+    // all pass
+    //val filter = builder.lessThan("ss_sold_date_sk", PredicateLeaf.Type.LONG, java.lang.Long.MAX_VALUE).build()
+    // something middle
+    val filter = builder.lessThan("ss_sold_date_sk", PredicateLeaf.Type.LONG, 2451475L).build()
+    this.projection(1) = true // for search
+    this.ro.searchArgument(filter, Array[String]())
   }
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
@@ -50,17 +63,26 @@ class ORCReadTest extends  AbstractTest {
       OrcFile.readerOptions(conf))
     this.schema = reader.getSchema
     this.projection = new Array[Boolean](schema.getMaximumId + 1)
-    this.rows = if(true) simpleReader(reader) else projectedReader(reader)
+    if(true) {
+      configSimpleReader()
+    } else {
+      configWithFilters()
+      configProjectedReader()
+    }
+    this.rows = reader.rows(this.ro)
     this.batch = this.schema.createRowBatch()
   }
 
   final private[this] def consumeIntColumn(batch:VectorizedRowBatch, index:Int):Unit = {
+    //ints are in long column vector
     val intVector: LongColumnVector = batch.cols(index).asInstanceOf[LongColumnVector]
     val isNull = intVector.isNull
     var i = 0
     while ( i < batch.size) {
       if(!isNull(i)){
         val intVal = intVector.vector(i)
+//        if(i == 0)
+//          require(intVal < 2451475, " inval " + intVal + " filter " + 2451475)
         this._sum+=intVal
         this._validInt+=1
       }
