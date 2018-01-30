@@ -13,9 +13,17 @@ class SFFReadTest extends  AbstractTest {
   private[this] val sff = new SimpleFileFormat
   private[this] var itr:SFFRowIterator = _
   private[this] var schema:StructType = _
-  private[this] var fastReaders:Array[SFFROW => Unit] = _
+  private[this] var fastReadersV1:Array[SFFROW => Unit] = _
+  private[this] var fastReadersV2:Array[(Int, SFFROW) => Unit] = _
   private[this] var schemaArray:Array[DataType] = _
   private[this] var numCols:Int = _
+
+  private[this] val extractDoubleFunc:(Int, SFFROW)=>Unit = (ordinal:Int, row:SFFROW) => {
+    if (!row.isNullAt(ordinal)) {
+      this._validDouble += 1
+      this._sum += row.getDouble(ordinal).toLong
+    }
+  }
 
   private[this] val extractLongFunc:(Int, SFFROW)=>Unit = (ordinal:Int, row:SFFROW) => {
     if(!row.isNullAt(ordinal)){
@@ -24,10 +32,68 @@ class SFFReadTest extends  AbstractTest {
     }
   }
 
+  //probably create an array of these functions too
   private[this] val extractIntFunc:(Int, SFFROW)=>Unit = (ordinal:Int, row:SFFROW) => {
     if(!row.isNullAt(ordinal)){
       this._sum+=row.getInt(ordinal)
       this._validInt+=1
+    }
+  }
+
+  private[this] def setupV1():Unit = {
+    this.fastReadersV1 = new Array[SFFROW => Unit](numCols)
+    var i = 0
+    println(" Fast function read will have : " + numCols + " functions ")
+    while(i < numCols) {
+      this.schema.fields(i).dataType match {
+
+        case LongType => this.fastReadersV1(i) = {
+          (row: SFFROW) => {
+            val index = i
+            if (!row.isNullAt(index)) {
+              this._sum += row.getLong(index)
+              this._validLong += 1
+            }
+          }
+        }
+
+        case DoubleType => this.fastReadersV1(i) = {
+          (row:SFFROW) => {
+            val index = i
+            if(!row.isNullAt(index)){
+              this._sum+=row.getDouble(index).toLong
+              this._validDouble+=1
+            }
+          }
+        }
+
+        case IntegerType => this.fastReadersV1(i) = {
+          (row:SFFROW) => {
+            val index = i
+            if(!row.isNullAt(index)){
+              this._sum+=row.getInt(index)
+              this._validInt+=1
+            }
+          }
+        }
+        case _ => throw new Exception
+      }
+      i+=1
+    }
+  }
+
+  private[this] def setupV2():Unit = {
+    this.fastReadersV2 = new Array[(Int, SFFROW) => Unit](numCols)
+    var i = 0
+    println(" V2 Fast function read will have : " + numCols + " functions ")
+    while(i < numCols) {
+      this.schema.fields(i).dataType match {
+        case LongType => this.fastReadersV2(i) = extractLongFunc
+        case DoubleType => this.fastReadersV2(i) = extractDoubleFunc
+        case IntegerType => this.fastReadersV2(i) = extractIntFunc
+        case _ => throw new Exception
+      }
+      i+=1
     }
   }
 
@@ -37,21 +103,24 @@ class SFFReadTest extends  AbstractTest {
     this.schema = sff.getSchemaFromDatafile(fileName)
     this.schemaArray = this.schema.fields.map(fx => fx.dataType)
     this.numCols = this.schema.fields.length
-    //    this.fastReaders = new Array[SFFROW => Unit](this.schema.size)
-    //    for(i <- this.fastReaders.indices){
-    //      this.schema.fields(i).dataType match {
-    //        case LongType => this.fastReaders(i) = extractLongFunc(i, _:SFFROW)
-    //        case IntegerType => this.fastReaders(i) = extractIntFunc(i, _:SFFROW)
-    //        case _ => throw new Exception
-    //      }
-    //    }
+    //setupV2()
+  }
+
+  private[this] def consumeSFFROWX1(row:SFFROW):Unit= {
+    // TODO: to see if scala.Function are inlined or not?
+    // this does not work because function pointers do not take variable indexes
+    var i = 0
+    while (i < numCols){
+      println(" i " + i + " numCols: " + numCols)
+      this.fastReadersV1(i).apply(row)
+      i+=1
+    }
   }
 
   private[this] def consumeSFFROWX2(row:SFFROW):Unit= {
-    // TODO: to see if scala.Function are inlined or not?
     var i = 0
     while (i < numCols){
-      this.fastReaders(i)(row)
+      this.fastReadersV2(i)(i, row)
       i+=1
     }
   }
