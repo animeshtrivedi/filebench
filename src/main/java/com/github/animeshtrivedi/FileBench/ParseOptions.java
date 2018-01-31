@@ -13,6 +13,8 @@ public class ParseOptions {
     private long outItems;
     private String series;
     private String factory;
+    private int projectivity;
+    private int selectivity;
 
     public ParseOptions(){
         options = new Options();
@@ -27,6 +29,10 @@ public class ParseOptions {
         options.addOption("o", "output", true, "output directory location on an HDFS-compatible fs.");
         options.addOption("t", "test", true, "test.");
         options.addOption("p", "parallel", true, "parallel instances.");
+        options.addOption("P", "projectivity", true, "projectivity on the 0th int column.");
+        options.addOption("S", "selection", true, "selectivity on the 0th int column.");
+        //options.addOption("EP", "enableProjection", false, "enable projection.");
+        //options.addOption("ES", "enableSelection", false, "enable selection.");
     }
 
     public void show_help() {
@@ -46,6 +52,18 @@ public class ParseOptions {
 
             if (cmd.hasOption("p")) {
                 this.parallel = Integer.parseInt(cmd.getOptionValue("p").trim());
+            }
+
+            if (cmd.hasOption("P")) {
+                this.projectivity = Integer.parseInt(cmd.getOptionValue("P").trim());
+                JavaUtils.projection = this.projectivity;
+                JavaUtils.enableProjection = true;
+            }
+
+            if (cmd.hasOption("S")) {
+                this.selectivity = Integer.parseInt(cmd.getOptionValue("S").trim());
+                JavaUtils.selection = this.selectivity;
+                JavaUtils.enableSelection = true;
             }
 
             if (cmd.hasOption("i")) {
@@ -85,5 +103,9 @@ public class ParseOptions {
 
     public String getSeries(){
         return this.series;
+    }
+
+    public int getProjectivity(){
+        return this.projectivity;
     }
 }

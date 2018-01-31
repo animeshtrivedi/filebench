@@ -1,6 +1,6 @@
 package com.github.animeshtrivedi.FileBench.rtests
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, JavaUtils, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.exec.vector._
@@ -29,15 +29,29 @@ class ORCReadTest extends  AbstractTest {
     }
   }
 
-  final private[this] def configProjectedReader():Unit = {
+  final private[this] def configProjectedReader(proj:Int):Unit = {
     //https://www.slideshare.net/Hadoop_Summit/ingesting-data-at-blazing-speed-using-apache-orc
-    var i = 0
-    while ( i < projection.length){
-      projection(i) = false
-      i+=4
+    if(proj == 100){
+      var i = 0
+      while ( i < projection.length){
+        projection(i) = true
+        i+=1
+      }
+    } else {
+      val numCols = projection.length - 1 // the whole array is +1
+      val numColsToBeSelected = (proj * numCols) / 100
+      this.projection(0) = true // first is always true
+      var i = 1
+      while (i <= numColsToBeSelected) {
+        projection(i) = true
+        i += 1
+      }
+      while(i < this.projection.length){
+        projection(i) = false
+        i+=1
+      }
     }
-    this.projection(0) = true // first is always true
-    this.projection(10) = true // the long index
+    //this.projection(10) = true // the long index in the store_sales schema
     this.ro.include(projection)
   }
 
@@ -49,8 +63,13 @@ class ORCReadTest extends  AbstractTest {
     // all pass
     //val filter = builder.lessThan("ss_sold_date_sk", PredicateLeaf.Type.LONG, java.lang.Long.MAX_VALUE).build()
     // something middle
-    val filter = builder.lessThan("ss_sold_date_sk", PredicateLeaf.Type.LONG, 2451475L).build()
-    this.projection(1) = true // for search
+
+    //val filter = builder.lessThan("ss_sold_date_sk", PredicateLeaf.Type.LONG, JavaUtils.selection.toLong).build()
+    //this.projection(1) = true // for search
+
+    val filter = builder.lessThanEquals("int0", PredicateLeaf.Type.LONG, JavaUtils.selection.toLong).build()
+    this.projection(1) = true // for search, the first index
+
     this.ro.searchArgument(filter, Array[String]())
   }
 
@@ -63,11 +82,13 @@ class ORCReadTest extends  AbstractTest {
       OrcFile.readerOptions(conf))
     this.schema = reader.getSchema
     this.projection = new Array[Boolean](schema.getMaximumId + 1)
-    if(true) {
+    if(!JavaUtils.enableProjection) {
       configSimpleReader()
     } else {
-      configWithFilters()
-      configProjectedReader()
+      if(JavaUtils.enableSelection) {
+        configWithFilters()
+      }
+      configProjectedReader(JavaUtils.projection)
     }
     this.rows = reader.rows(this.ro)
     this.batch = this.schema.createRowBatch()

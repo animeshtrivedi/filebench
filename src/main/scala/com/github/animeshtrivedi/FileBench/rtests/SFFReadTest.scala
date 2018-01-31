@@ -1,10 +1,13 @@
 package com.github.animeshtrivedi.FileBench.rtests
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, JavaUtils, TestObjectFactory}
 import org.apache.spark.sql.simplefileformat.SimpleFileFormat
+import org.apache.spark.sql.simplefileformat.filters.{LessThanEqualFilter, SFFFilter}
 import org.apache.spark.sql.simplefileformat.{SFFRowIterator, SimpleFileFormat}
 import org.apache.spark.sql.simplefileformat.priv.SFFROW
 import org.apache.spark.sql.types._
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
   * Created by atr on 19.11.17.
@@ -97,12 +100,53 @@ class SFFReadTest extends  AbstractTest {
     }
   }
 
-  final override def init(fileName: String, expectedBytes: Long): Unit = {
+  private[this] final def makeProjectionSchema(dataSchema:StructType):StructType = {
+    if(JavaUtils.projection == 100 || !JavaUtils.enableProjection){
+      println("Projected schema is 100% (or no projection enabled) ")
+      dataSchema
+    } else {
+      println("Projected schema is " + JavaUtils.projection + "%")
+      val numCols = dataSchema.fields.length
+      val choosen = (numCols * JavaUtils.projection) / 100
+      val choosenCols = dataSchema.fields.take(choosen)
+      var newSchema = new StructType()
+      choosenCols.foreach(fx => newSchema = newSchema.add(fx))
+      newSchema
+    }
+  }
+
+  private[this] final def makeFilter():ArrayBuffer[SFFFilter] = {
+    if(JavaUtils.enableSelection) {
+      ArrayBuffer(new LessThanEqualFilter(0, IntegerType, JavaUtils.selection))
+    } else {
+      ArrayBuffer[SFFFilter]()
+    }
+  }
+
+  private[this] final def initProjectionFilters(fileName: String, expectedBytes: Long): Unit = {
+    this.bytesOnFS = expectedBytes
+    val originalSchema = sff.getSchemaFromDatafile(fileName)
+    // make filters
+    val filters = makeFilter()
+    // this is projected schema
+    this.schema = makeProjectionSchema(originalSchema)
+    this.itr = sff.makeRowIteratorZ(fileName, originalSchema, this.schema, filters)
+    this.schemaArray = this.schema.fields.map(fx => fx.dataType)
+    this.numCols = this.schema.fields.length
+  }
+
+  private[this] final def initFast(fileName: String, expectedBytes: Long): Unit = {
     this.bytesOnFS = expectedBytes
     this.itr = sff.buildRowIteratorX(fileName)
     this.schema = sff.getSchemaFromDatafile(fileName)
     this.schemaArray = this.schema.fields.map(fx => fx.dataType)
     this.numCols = this.schema.fields.length
+  }
+
+  final override def init(fileName: String, expectedBytes: Long): Unit = {
+    //initFast(fileName, expectedBytes)
+    initProjectionFilters(fileName, expectedBytes)
+    //setupV1()
     //setupV2()
   }
 

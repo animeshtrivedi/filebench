@@ -2,7 +2,7 @@ package com.github.animeshtrivedi.FileBench.rtests
 
 import java.util
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, DumpGroupConverterX, TestObjectFactory}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, DumpGroupConverterX, JavaUtils, TestObjectFactory}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.column.ColumnReader
@@ -15,7 +15,7 @@ import org.apache.parquet.format.converter.ParquetMetadataConverter
 import org.apache.parquet.hadoop.ParquetFileReader
 import org.apache.parquet.hadoop.metadata.{BlockMetaData, FileMetaData, ParquetMetadata}
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName
-import org.apache.parquet.schema.{MessageType, OriginalType}
+import org.apache.parquet.schema._
 
 /**
   * Created by atr on 19.11.17.
@@ -46,9 +46,8 @@ class ParquetReadTest extends AbstractTest {
     //    val minFilter = FilterApi.lt(intColumn("value"),
     //      -1832563198.asInstanceOf[java.lang.Integer])
     //    FilterApi.or(maxFilter, minFilter)
-
-    FilterApi.lt(intColumn("intKey"),
-      -1.asInstanceOf[java.lang.Integer])
+    FilterApi.ltEq(intColumn("int0"),
+      JavaUtils.selection.asInstanceOf[java.lang.Integer])
   }
 
   private[this] def installFilters(gen:Boolean, footer:ParquetMetadata):util.List[BlockMetaData] = {
@@ -67,6 +66,14 @@ class ParquetReadTest extends AbstractTest {
     }
   }
 
+  def makeProjectionSchema(messageType: MessageType, projection:Int = 100):MessageType = {
+    if(projection == 100 || !JavaUtils.enableProjection) {
+      messageType
+    } else {
+      JavaUtils.makeProjectionSchema(messageType, projection)
+    }
+  }
+
   final override def init(fileName: String, expectedBytes: Long): Unit = {
     val conf = new Configuration()
     val path = new Path(fileName)
@@ -75,11 +82,11 @@ class ParquetReadTest extends AbstractTest {
       path,
       ParquetMetadataConverter.NO_FILTER)
     this.mdata = readFooter.getFileMetaData
-    this.schema = mdata.getSchema
+    this.schema = makeProjectionSchema(mdata.getSchema, JavaUtils.projection)
     this.parquetFileReader = new ParquetFileReader(conf,
       this.mdata,
       path,
-      installFilters(false, readFooter),
+      installFilters(JavaUtils.enableSelection, readFooter),
       this.schema.getColumns)
     // I had this before which does not support putting filters - ParquetFileReader.(conf, path).
     //println( " expected in coming records are : " + parquetFileReader.getRecordCount)
