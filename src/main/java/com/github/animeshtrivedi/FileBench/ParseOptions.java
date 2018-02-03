@@ -9,9 +9,7 @@ public class ParseOptions {
     private Options options;
     private int parallel;
     private String inputDir;
-    private String outputDir;
-    private long outItems;
-    private String series;
+    private String warmUpDir;
     private String factory;
     private int projectivity;
     private int selectivity;
@@ -19,14 +17,12 @@ public class ParseOptions {
     public ParseOptions(){
         options = new Options();
         this.parallel = 16;
-        this.series = "long";
-        this.outItems = 1000;
         this.factory = "hdfsread";
         this.inputDir = "/sql/tpcds-sff/store_sales/";
-        this.outputDir = "/filebench-output/";
+        this.warmUpDir = null;
         options.addOption("h", "help", false, "show help.");
         options.addOption("i", "input", true, "input directory location on an HDFS-compatible fs.");
-        options.addOption("o", "output", true, "output directory location on an HDFS-compatible fs.");
+        options.addOption("w", "warmupinput", true, "same as the winput but for warmup routine.");
         options.addOption("t", "test", true, "test.");
         options.addOption("p", "parallel", true, "parallel instances.");
         options.addOption("P", "projectivity", true, "projectivity on the 0th int column.");
@@ -70,8 +66,8 @@ public class ParseOptions {
                 this.inputDir = cmd.getOptionValue("i").trim();
             }
 
-            if (cmd.hasOption("o")) {
-                this.outputDir = cmd.getOptionValue("w").trim();
+            if (cmd.hasOption("w")) {
+                this.warmUpDir = cmd.getOptionValue("w").trim();
             }
 
             if (cmd.hasOption("t")) {
@@ -97,15 +93,7 @@ public class ParseOptions {
         return this.inputDir;
     }
 
-    public String getOutputDir(){
-        return this.outputDir;
-    }
-
-    public String getSeries(){
-        return this.series;
-    }
-
-    public int getProjectivity(){
-        return this.projectivity;
+    public String getWarmUpDir(){
+        return this.warmUpDir;
     }
 }
