@@ -124,6 +124,7 @@ object Utils {
       case "arrowread" => ArrowReadTest
       case "pq2arrow" => ParquetToArrowTestFrameWork
       case "parquetcsum" => ParquetCsum
+      case "sffcsum" => SFFCsum
       case _ => throw new Exception(" whoa ..., no test found with the name : " + str)
     }
   }
