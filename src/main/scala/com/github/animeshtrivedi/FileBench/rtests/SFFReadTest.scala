@@ -144,8 +144,8 @@ class SFFReadTest extends  AbstractTest {
   }
 
   final override def init(fileName: String, expectedBytes: Long): Unit = {
-    //initFast(fileName, expectedBytes)
-    initProjectionFilters(fileName, expectedBytes)
+    initFast(fileName, expectedBytes)
+    //initProjectionFilters(fileName, expectedBytes)
     //setupV1()
     //setupV2()
   }
@@ -218,29 +218,33 @@ class SFFReadTest extends  AbstractTest {
   private[this] def consumeSFFROWX4(row:SFFROW):Unit= {
     var i = 0
     while (i < numCols) {
-      this.schemaArray(i) match {
-        case IntegerType | DateType => if (!row.isNullAt(i)) {
-          this._validInt += 1
-          this._sum += row.getInt(i)
+      // match at the top
+      if(!row.isNullAt(i)) {
+        this.schemaArray(i) match {
+          case IntegerType | DateType =>
+            this._validInt += 1
+            this._sum += row.getInt(i)
+
+          case LongType =>
+            this._validLong += 1
+            this._sum += row.getLong(i)
+
+          case DoubleType =>
+            this._validDouble += 1
+            this._sum += row.getDouble(i).toLong
+
+          case BinaryType | StringType =>
+            this._validBinary += 1
+            val size = row.getColumnSizeinBytes(i)
+            this._sum += size
+            this._validBinarySize += size
+
+          case _ => throw new Exception(" not implemented type " + this.schemaArray(i))
         }
-        case LongType => if (!row.isNullAt(i)) {
-          this._validLong += 1
-          this._sum += row.getLong(i)
-        }
-        case DoubleType => if (!row.isNullAt(i)) {
-          this._validDouble += 1
-          this._sum += row.getDouble(i).toLong
-        }
-        case BinaryType | StringType => if (!row.isNullAt(i)) {
-          this._validBinary += 1
-          val size = row.getColumnSizeinBytes(i)
-          this._sum+=size
-          this._validBinarySize+=size
-        }
-        case _ => throw new Exception(" not implemented type " + this.schemaArray(i))
       }
       i+=1
     }
+    this.totalRows+=1
   }
 
   final override def run(): Unit = {
@@ -250,7 +254,6 @@ class SFFReadTest extends  AbstractTest {
       val row = itr.next()
       //consumeSFFROWX4Debug(row)
       consumeSFFROWX4(row)
-      totalRows+=1
     }
     this.runTimeInNanoSecs = System.nanoTime() - s1
     printStats()
