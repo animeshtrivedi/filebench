@@ -28,7 +28,8 @@ abstract class AbstractTest extends Runnable with Serializable {
       " longs: " + this._validLong +
       " doubles:" + this._validDouble +
       " decimals: " + this._validDecimal +
-      " binary " + this._validBinary)
+      " binary " + this._validBinary +
+      " binarySize " + this._validBinarySize)
   }
 
   final def getTotalSizeInBytes:Long = {
@@ -56,6 +57,10 @@ abstract class AbstractTest extends Runnable with Serializable {
 
   final def validBinary:Long = {
     this._validBinary
+  }
+
+  final def validBinarySize:Long = {
+    this._validBinarySize
   }
 
   final def getResults:TestResult = TestResult(this.totalRows, this.bytesOnFS, this.runTimeInNanoSecs)
