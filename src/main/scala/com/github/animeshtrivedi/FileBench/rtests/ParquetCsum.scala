@@ -2,7 +2,7 @@ package com.github.animeshtrivedi.FileBench.rtests
 
 import java.nio.ByteBuffer
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, DumpGroupConverterX, JavaUtils, TestObjectFactory}
+import com.github.animeshtrivedi.FileBench._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.column.ColumnReader
@@ -91,9 +91,8 @@ class ParquetCsum extends AbstractTest {
     while (i < rows){
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
-        val x= creader.getInteger
         // integer checksum is generated as it is
-        this._sum+=x
+        this._sum+=creader.getInteger
         this._validInt+=1
       }
       creader.consume()
@@ -116,16 +115,9 @@ class ParquetCsum extends AbstractTest {
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
         val binArray = creader.getBinary.getBytes
-        val binLength = binArray.length
-        var arrayCheckum:Long = 0
-        var j : Int = 0
-        while (j < binLength){
-          arrayCheckum = arrayCheckum + binArray(j)
-          j= j + 1
-        }
-        this._sum+= (binLength + arrayCheckum)
-        this._validBinarySize+=binLength
+        this._sum+= Utils.arrayChecksum(binArray)
         this._validBinary+=1
+        this._validBinarySize+=binArray.length
       }
       creader.consume()
       i+=1L
@@ -167,10 +159,8 @@ class ParquetCsum extends AbstractTest {
     while (i < rows){
       val dvalue = creader.getCurrentDefinitionLevel
       if(dvalue == dmax){
-        val d = creader.getDouble
-        doubleByteBuffer.putDouble(0, d)
-        // checked on the scala prompt, 2 buffers with the same double value give the same checksum
-        this._sum+=doubleByteBuffer.hashCode()
+        doubleByteBuffer.putDouble(0, creader.getDouble)
+        this._sum+=Utils.arrayChecksum(doubleByteBuffer.array())
         this._validDouble+=1
       }
       creader.consume()

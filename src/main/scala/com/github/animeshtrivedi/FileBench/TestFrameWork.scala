@@ -48,6 +48,7 @@ class TestFrameWork(val allocateTestObject: TestObjectFactory, val inputDir:Stri
   var totalInts = 0L
   var totalLongs = 0L
   var totalDoubles = 0L
+  var totalBinary = 0L
 
   testArr.foreach( x=> {
     totalBytesMaterizlied+=x.getTotalSizeInBytes
@@ -55,6 +56,7 @@ class TestFrameWork(val allocateTestObject: TestObjectFactory, val inputDir:Stri
     totalInts+=x.validInt
     totalLongs+=x.validLong
     totalDoubles+=x.validDouble
+    totalBinary+=x.validBinary
   })
   var totalRows = 0L
   testArr.foreach(x => totalRows+=x.getResults.rows)
@@ -71,7 +73,7 @@ class TestFrameWork(val allocateTestObject: TestObjectFactory, val inputDir:Stri
   println(" total bytes materialized " + totalBytesMaterizlied + " totalBytesFrom FS (w/o filter): " + totalBytesFromFS +
     "  || rowSize on FS " + Utils.twoLongDivToDecimal(totalBytesFromFS, totalRows) + " bytes " +
     " rowSize on fly " + Utils.twoLongDivToDecimal(totalBytesMaterizlied, totalRows) + " bytes")
-  println(" sum: " + totalSumMaterizlied + " valid ints: " + totalInts + " longs: " + totalLongs + " doubles: " + totalDoubles)
+  println(" sum: " + totalSumMaterizlied + " valid ints: " + totalInts + " longs: " + totalLongs + " doubles: " + totalDoubles + " binary: " + totalBinary)
   println("-------------------------------------------")
   println(" Runtime is " + runTimeinMS + " msec, rows "
     + totalRows + " bw[FS]: " + bandwidthFromFS + " Gbps, bw[data] " + bandwidthData + " [ time/row : " +

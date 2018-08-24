@@ -128,4 +128,17 @@ object Utils {
       case _ => throw new Exception(" whoa ..., no test found with the name : " + str)
     }
   }
+
+  def arrayChecksum(arr:Array[Byte]):Long = arrayChecksum(arr, 0, arr.length)
+
+  def arrayChecksum(arr:Array[Byte], offset:Int, length:Int):Long = {
+    var j = 0
+    var csum:Long = offset
+    while(j < length){
+      csum = arr(j)
+      j+=1
+    }
+    csum+=length
+    csum
+  }
 }

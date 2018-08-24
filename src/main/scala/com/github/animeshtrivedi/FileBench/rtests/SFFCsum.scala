@@ -2,7 +2,7 @@ package com.github.animeshtrivedi.FileBench.rtests
 
 import java.nio.ByteBuffer
 
-import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory}
+import com.github.animeshtrivedi.FileBench.{AbstractTest, TestObjectFactory, Utils}
 import org.apache.spark.sql.simplefileformat.priv.SFFROW
 import org.apache.spark.sql.simplefileformat.{SFFRowIterator, SimpleFileFormat}
 import org.apache.spark.sql.types._
@@ -43,9 +43,8 @@ class SFFCsum extends  AbstractTest {
 
           case DoubleType =>
             this._validDouble += 1
-            bb.clear()
             bb.putDouble(0,row.getDouble(i))
-            this._sum += bb.hashCode()
+            this._sum += Utils.arrayChecksum(bb.array(), 0, java.lang.Double.BYTES)
 
           case BinaryType | StringType =>
             this._validBinary += 1
@@ -55,7 +54,8 @@ class SFFCsum extends  AbstractTest {
             }
             val buffer = bb.array()
             row.getBinary(i, buffer, 0, size)
-            this._sum += (size + bb.hashCode())
+            /* now we calculate checksum */
+            this._sum += Utils.arrayChecksum(buffer, 0, size)
             this._validBinarySize += size
 
           case _ => throw new Exception(" not implemented type " + this.schemaArray(i))
